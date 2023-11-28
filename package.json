@@ -1,0 +1,35 @@
+{
+  "name": "filebase-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/cjs/index.js",
+  "module": "dist/mjs/index.mjs",
+  "exports": {
+    ".": {
+      "require": "./dist/mjs/index.cjs",
+      "import": "./dist/cjs/index.mjs"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "run-script-os",
+    "build:win32": "rmdir /s /q dist && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && .\\fixup.bat",
+    "build:nix": "rm -fr dist/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./fixup.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "devDependencies": {
+    "prettier": "^3.1.0",
+    "run-script-os": "^1.1.6",
+    "typescript": "5.3.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.454.0",
+    "@aws-sdk/lib-storage": "3.458.0",
+    "@helia/car": "1.0.4",
+    "@helia/unixfs": "1.4.2",
+    "blockstore-fs": "1.1.6",
+    "uuid": "9.0.1"
+  }
+}
