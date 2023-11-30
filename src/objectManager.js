@@ -27,7 +27,7 @@ import { once } from "node:events";
  * @classdesc Interacts with an S3 client to perform various operations on objects in a bucket.
  */
 class ObjectManager {
-  #client;
+  client;
   #defaultBucket;
   #maxConcurrentUploads = 4;
 
@@ -46,8 +46,10 @@ class ObjectManager {
       maxConcurrentUploads: 4,
     },
   ) {
-    // Login to S3 Endpoint
-    this.#client = new S3Client(S3ClientConfig);
+    /**
+     * @property {Object} client  Represents the client object for S3 API.
+     */
+    this.client = new S3Client(S3ClientConfig);
     this.#defaultBucket = defaultBucket;
 
     if (options?.maxConcurrentUploads) {
@@ -63,10 +65,10 @@ class ObjectManager {
    *
    * @param {string} key - The key or path of the file in the bucket.
    * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
-   *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file,
-   *    which will be prefixed with a unique upload UUID, e.g., '/uploadUUID/path'.
+   *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
+   *    and a 'content' property specifying the content of the file.
    * @param {string} [bucket=this.#defaultBucket] - The bucket name. Default is the value of the defaultBucket property.
-   * @returns {Promise<*>}
+   * @returns {Promise<Object>}
    */
   async upload(key, source, bucket = this.#defaultBucket) {
     // Setup Upload Options
@@ -78,7 +80,7 @@ class ObjectManager {
         uploadUUID,
       ),
       uploadOptions = {
-        client: this.#client,
+        client: this.client,
         params: {
           Bucket: bucket,
           Key: key,
@@ -137,14 +139,14 @@ class ObjectManager {
         Key: key,
         Body: source,
       }),
-      headResult = await this.#client.send(command),
+      headResult = await this.client.send(command),
       responseCid =
         process.env.NODE_ENV === "test" ? 1234567890 : headResult.Metadata.cid;
 
     // Delete Temporary Blockstore
     await rm(temporaryBlockstorePath, { recursive: true, force: true });
 
-    if (parsedEntries.length === 0) {
+    if (Object.keys(parsedEntries).length === 0) {
       return {
         cid: responseCid,
       };
@@ -167,7 +169,7 @@ class ObjectManager {
         Bucket: bucket,
         Key: key,
       }),
-      response = await this.#client.send(command);
+      response = await this.client.send(command);
 
     return response.Body;
   }
@@ -194,7 +196,7 @@ class ObjectManager {
       bucketContents = [];
     while (isTruncated && bucketContents.length < limit) {
       const { Contents, IsTruncated, NextContinuationToken } =
-        await this.#client.send(command);
+        await this.client.send(command);
       if (typeof Contents === "undefined") {
         isTruncated = false;
         continue;
@@ -219,7 +221,7 @@ class ObjectManager {
       Key: key,
     });
 
-    return await this.#client.send(command);
+    return await this.client.send(command);
   }
 
   /**
@@ -245,7 +247,7 @@ class ObjectManager {
       Key: destinationKey || sourceKey,
     });
 
-    return await this.#client.send(command);
+    return await this.client.send(command);
   }
 }
 

@@ -10,7 +10,7 @@ import {
  * @classdesc Provides methods for managing buckets in an S3 endpoint.
  */
 class BucketManager {
-  #client;
+  client;
 
   /**
    * Creates a new instance of the S3Client class.
@@ -18,8 +18,10 @@ class BucketManager {
    * @param {Object} S3ClientConfig - The configuration object for the S3Client.
    */
   constructor(S3ClientConfig) {
-    // Login to S3 Endpoint
-    this.#client = new S3Client(S3ClientConfig);
+    /**
+     * @property {Object} client  Represents the client object for S3 API.
+     */
+    this.client = new S3Client(S3ClientConfig);
   }
 
   /**
@@ -33,7 +35,7 @@ class BucketManager {
       Bucket: name,
     });
 
-    return await this.#client.send(command);
+    return await this.client.send(command);
   }
 
   /**
@@ -44,7 +46,7 @@ class BucketManager {
    */
   async list(listBucketOptions = {}) {
     const command = new ListBucketsCommand(listBucketOptions),
-      { Buckets } = await this.#client.send(command);
+      { Buckets } = await this.client.send(command);
 
     return Buckets;
   }
@@ -60,7 +62,7 @@ class BucketManager {
       Bucket: name,
     });
 
-    return await this.#client.send(command);
+    return await this.client.send(command);
   }
 }
 

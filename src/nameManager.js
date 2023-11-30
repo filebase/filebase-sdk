@@ -16,10 +16,10 @@ class NameManager {
    * @return {object} - The instance of the constructor.
    *
    */
-  constructor(key, secret) {
+  constructor(key, secret, endpoint = "https://api.filebase.io/v1/names") {
     const encodedToken = Buffer.from(`${key}:${secret}`).toString("base64");
     this.#client = axios.create({
-      baseURL: "https://api.filebase.io/v1/names",
+      baseURL: endpoint,
       timeout: 60000,
       headers: { Authorization: encodedToken },
     });
