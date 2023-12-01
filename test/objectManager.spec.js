@@ -64,6 +64,33 @@ test("upload object", async () => {
   assert.strictEqual(uploaded, true);
 });
 
+test("upload directory", async () => {
+  // Create Bucket `create-object-test-pass
+  const uploadDirectoryTestBucket = `create-directory-test-pass`;
+  await createBucket(uploadDirectoryTestBucket);
+
+  // Upload object `create-object-test`
+  const uploaded = await uploadObject(
+    uploadDirectoryTestBucket,
+    `create-directory-test`,
+    [
+      {
+        path: "/testObjects/1.txt",
+        content: Buffer.from("upload test object", "utf-8"),
+      },
+      {
+        path: "/testObjects/deep/1.txt",
+        content: Buffer.from("upload deep test object", "utf-8"),
+      },
+      {
+        path: "/topLevel.txt",
+        content: Buffer.from("upload top level test object", "utf-8"),
+      },
+    ],
+  );
+  assert.strictEqual(uploaded, true);
+});
+
 test("download object", async () => {
   // Create bucket `download-object-test-pass`
   const downloadTestBucket = `download-object-test-pass`;
@@ -147,7 +174,7 @@ test("delete object", async () => {
   assert.equal(typeof uploadedObject, "undefined");
 });
 
-/*test("copy object", async () => {
+test("copy object", async () => {
   // Create bucket `copy-object-test-pass-src`
   const bucketSrc = `copy-object-test-pass-src`;
   await createBucket(bucketSrc);
@@ -177,4 +204,4 @@ test("delete object", async () => {
     }),
     copiedObject = existingObjects.length > 0 ? existingObjects[0] : undefined;
   assert.equal(copiedObject.Name, objectNameToCreateSrc);
-});*/
+});
