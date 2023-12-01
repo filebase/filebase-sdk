@@ -64,19 +64,12 @@ class NameManager {
   }
 
   /**
-   * @summary Sets the specified name with the given cid and optional sequence.
+   * @summary Sets the specified name with the given cid.
    * @param {string} name - The name to set.
    * @param {string} cid - The cid to associate with the name.
-   * @param {number|boolean} [sequence=false] - The optional sequence number to set.
    * @returns {Promise<any>} - A Promise that resolves with the response data from the server.
    */
-  async set(name, cid, sequence = false) {
-    const setOptions = {
-      cid,
-    };
-    if (sequence) {
-      setOptions.sequence = Number(sequence);
-    }
+  async set(name, cid) {
     const setResponse = await this.#client.request({
       method: "PUT",
       url: `/${name}`,
