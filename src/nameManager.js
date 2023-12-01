@@ -1,15 +1,11 @@
 import axios from "axios";
 
-/**
- * @class NameManager
- * @classdesc Represents a NameManager object that provides methods for managing names and associated content identifiers (CIDs) using a Filebase API.
- */
+/** Provides methods for managing names in an REST endpoint. */
 class NameManager {
   #client;
 
   /**
-   * Creates a new instance of the constructor.
-   *
+   * @summary Creates a new instance of the constructor.
    * @param {string} key - The key required for authorization.
    * @param {string} secret - The secret required for authorization.
    *
@@ -26,7 +22,8 @@ class NameManager {
   }
 
   /**
-   * Creates a new object with the given name and CID.
+
+   * @summary Creates a new object with the given name and CID.
    * @param {string} name - The name of the object.
    * @param {string} [cid] - The CID of the object. Default value is "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn".
    * @returns {Promise<*>} - A Promise that resolves with the response JSON.
@@ -43,8 +40,7 @@ class NameManager {
   }
 
   /**
-   * Imports a user's IPNS private key.
-   *
+   * @summary Imports a user's IPNS private key.
    * @param {String} name - The name of the user.
    * @param {String} privateKey - The user's private key.
    * @param {Number} [sequence=1] - The sequence number.
@@ -71,8 +67,7 @@ class NameManager {
   }
 
   /**
-   * Sets the specified name with the given cid and optional sequence.
-   *
+   * @summary Sets the specified name with the given cid and optional sequence.
    * @param {string} name - The name to set.
    * @param {string} cid - The cid to associate with the name.
    * @param {number|boolean} [sequence=false] - The optional sequence number to set.
@@ -96,8 +91,7 @@ class NameManager {
   }
 
   /**
-   * Retrieves current value from the server based on the given name parameter.
-   *
+   * @summary Retrieves current value from the server based on the given name parameter.
    * @param {string} name - The name parameter to fetch the current value for.
    * @returns {Promise<*>} - A promise that resolves with the fetched data.
    */
@@ -110,8 +104,7 @@ class NameManager {
   }
 
   /**
-   * Returns a list of names with the specified limit and options.
-   *
+   * @summary Returns a list of names with the specified limit and options.
    * @param {number} limit - The maximum number of names to retrieve. Default is 1000.
    * @param {object} options - Additional options for retrieving the names. Default is { continuationToken: false }.
    * @returns {Promise<*>} - A promise that resolves to an array of names.
@@ -142,8 +135,7 @@ class NameManager {
   }
 
   /**
-   * Deletes a resource with the given name.
-   *
+   * @summary Deletes a resource with the given name.
    * @param {string} name - The name of the resource to delete.
    * @returns {Promise<boolean>} - A promise that resolves to true if the resource is successfully deleted, otherwise false.
    */

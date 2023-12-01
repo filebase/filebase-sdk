@@ -5,28 +5,23 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 
-/**
- * @class BucketManager
- * @classdesc Provides methods for managing buckets in an S3 endpoint.
- */
+/** Provides methods for managing buckets in an S3 endpoint. */
 class BucketManager {
   client;
 
   /**
-   * Creates a new instance of the S3Client class.
-   *
+   * @summary Creates a new instance of the S3Client class.
    * @param {Object} S3ClientConfig - The configuration object for the S3Client.
    */
   constructor(S3ClientConfig) {
     /**
-     * @property {Object} client  Represents the client object for S3 API.
+     * @property {Object} client Represents the client object for S3 API.
      */
     this.client = new S3Client(S3ClientConfig);
   }
 
   /**
-   * Creates a new bucket with the specified name.
-   *
+   * @summary Creates a new bucket with the specified name.
    * @param {string} name - The name of the bucket to create.
    * @returns {Promise<*>} - A promise that resolves when the bucket is created.
    */
@@ -39,8 +34,7 @@ class BucketManager {
   }
 
   /**
-   * Lists the buckets in the client.
-   *
+   * @summary Lists the buckets in the client.
    * @param {Object} listBucketOptions - The options for listing buckets.
    * @returns {Promise<Array<Object>>} - A promise that resolves with an array of objects representing the buckets in the client.
    */
@@ -52,8 +46,7 @@ class BucketManager {
   }
 
   /**
-   * Deletes the specified bucket.
-   *
+   * @summary Deletes the specified bucket.
    * @param {string} name - The name of the bucket to delete.
    * @returns {Promise<void>} - A promise that resolves when the bucket is deleted.
    */

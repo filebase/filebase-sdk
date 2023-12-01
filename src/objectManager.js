@@ -22,18 +22,14 @@ import { mkdir, rm } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { once } from "node:events";
 
-/**
- * @class ObjectManager
- * @classdesc Interacts with an S3 client to perform various operations on objects in a bucket.
- */
+/** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
   client;
   #defaultBucket;
   #maxConcurrentUploads = 4;
 
   /**
-   * Creates a new instance of the class.
-   *
+   * @summary Creates a new instance of the class.
    * @param {S3ClientConfig} S3ClientConfig - The configuration object for the S3 client.
    * @param {string} defaultBucket - The default S3 bucket to be used.
    * @param {object} options - Optional settings for the constructor.
@@ -58,11 +54,11 @@ class ObjectManager {
   }
 
   /**
-   * Uploads a file or a CAR file to the specified bucket.
    * If the source parameter is an array of objects, it will pack multiple files into a CAR file for upload.
    * The method returns a Promise that resolves to an object containing the CID (Content Identifier) of the uploaded file
    * and an optional entries object when uploading a CAR file.
    *
+   * @summary Uploads a file or a CAR file to the specified bucket.
    * @param {string} key - The key or path of the file in the bucket.
    * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
    *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
@@ -158,8 +154,7 @@ class ObjectManager {
   }
 
   /**
-   * Downloads an object from the specified bucket using the provided key.
-   *
+   * @summary Downloads an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be downloaded.
    * @param {string} [bucket] - The name of the bucket to download from. If not provided, the default bucket will be used.
    * @returns {Promise<Buffer>} - A promise that resolves with the contents of the downloaded object as a Buffer.
@@ -177,18 +172,25 @@ class ObjectManager {
   /**
    * Retrieves a list of objects from a specified bucket.
    *
-   * @param {Object} listOptions - An object containing options for listing objects (default: {}).
-   * @param {string} bucket - The name of the bucket to retrieve objects from (default: this.#defaultBucket).
-   * @param {number} limit - The maximum number of objects to retrieve (default: 1000).
+   * @param {Object} options - The options for listing objects.  Accepts S3 SDK ListObjectsRequest parameters.
+   * @param {string} [options.Bucket] - The name of the bucket. If not provided, the default bucket will be used.
+   * @param {number} [options.MaxKeys] - The maximum number of objects to retrieve. Defaults to 1000.
    * @returns {Promise<Array>} - A promise that resolves to an array of objects.
    */
-  async list(listOptions = {}, bucket = this.#defaultBucket, limit = 1000) {
-    const commandOptions = {
+  async list(
+    options = {
+      Bucket: this.#defaultBucket,
+      MaxKeys: 1000,
+    },
+  ) {
+    const bucket = options?.Bucket || this.#defaultBucket,
+      limit = options?.MaxKeys || 1000,
+      commandOptions = {
         Bucket: bucket,
         MaxKeys: limit,
       },
       command = new ListObjectsV2Command({
-        ...listOptions,
+        ...options,
         ...commandOptions,
       });
 
@@ -209,8 +211,7 @@ class ObjectManager {
   }
 
   /**
-   * Deletes an object from the specified bucket using the provided key.
-   *
+   * @summary Deletes an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be deleted.
    * @param {string} [bucket=this.#defaultBucket] - The name of the bucket that contains the object. Defaults to the default bucket.
    * @returns {Promise<*>} - A Promise that resolves with the result of the delete operation.
@@ -225,21 +226,24 @@ class ObjectManager {
   }
 
   /**
-   * Copy the object from sourceKey in the sourceBucket to destinationKey in the destinationBucket.
    * If the destinationKey is not provided, the object will be copied with the same key as the sourceKey.
    *
+   * @summary Copy the object from sourceKey in the sourceBucket to destinationKey in the destinationBucket.
    * @param {string} sourceKey - The key of the object to be copied from the sourceBucket.
    * @param {string} destinationBucket - The bucket where the object will be copied to.
-   * @param {string} [sourceBucket=this.#defaultBucket] - The bucket from which the object will be copied (default is the default bucket).
-   * @param {string} [destinationKey=null] - The key of the copied object in the destinationBucket (default is the same as sourceKey).
+   * @param {object} [options] - Additional options for the copy operation.
+   * @param {string} [options.sourceBucket=this.#defaultBucket] - The source bucket from where the object is to be copied.
+   * @param {string} [options.destinationKey] - The key of the object in the destination bucket. By default, it is the same as the sourceKey.
    *
    * @returns {Promise<*>} - A Promise that resolves with the response of the copy operation.
    */
   async copy(
     sourceKey,
     destinationBucket,
-    sourceBucket = this.#defaultBucket,
-    destinationKey = null,
+    options = {
+      sourceBucket: this.#defaultBucket,
+      destinationKey: undefined,
+    },
   ) {
     const command = new CopyObjectCommand({
       CopySource: `${sourceBucket}/${sourceKey}`,

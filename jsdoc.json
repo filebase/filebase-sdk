@@ -1,16 +1,22 @@
 {
   "source": {
-    "include": ["src"],
+    "include": ["src", "package.json"],
     "includePattern": ".js$",
     "excludePattern": "(node_modules/|docs)"
   },
-  "plugins": ["plugins/markdown"],
+  "plugins": ["plugins/markdown", "plugins/summarize"],
   "templates": {
-    "cleverLinks": true,
-    "monospaceLinks": true
+    "referenceTitle": "Filebase SDK",
+    "cleverLinks": true
   },
   "opts": {
+    "template": "node_modules/clean-jsdoc-theme",
     "recurse": true,
-    "destination": "./documentation/"
+    "destination": "./documentation/",
+    "readme": "./readme.md",
+    "theme_opts": {
+      "title": "Filebase SDK",
+      "homepageTitle": "Filebase SDK"
+    }
   }
 }
