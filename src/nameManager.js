@@ -43,7 +43,6 @@ class NameManager {
    * @summary Imports a user's IPNS private key.
    * @param {String} name - The name of the user.
    * @param {String} privateKey - The user's private key.
-   * @param {Number} [sequence=1] - The sequence number.
    * @param {String} [cid="QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"] - The CID (Content Identifier) of the data.
    *
    * @returns {Promise<Object>} - A Promise that resolves to the server response.
@@ -51,7 +50,6 @@ class NameManager {
   async import(
     name,
     privateKey,
-    sequence = 1,
     cid = "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn",
   ) {
     const importResponse = await this.#client.request({
@@ -59,7 +57,6 @@ class NameManager {
       data: {
         name,
         privateKey,
-        sequence,
         cid,
       },
     });
