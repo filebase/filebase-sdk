@@ -29,7 +29,8 @@ yarn add filebase-sdk
 ### Getting started
 
 The snippet below shows how to create a new bucket with `BucketManager`, upload a new object to IPFS 
-with `ObjectManager`, and publish the object to IPNS with `NameManager`.   
+with `ObjectManager`, publish the object to IPNS with `NameManager`, delete the object with `ObjectManager` and finally
+delete the bucket with `BucketManager`.
 
 To use the library in your project, use npm or yarn to install the [`filebase-sdk`](https://www.npmjs.com/package/filebase-sdk) module.
 
@@ -53,7 +54,8 @@ console.dir(bucketsList);
 // Initialize ObjectManager
 const objectManager = new ObjectManager(s3Config, bucketName);
 // Upload Object
-const uploadedObject = await objectManager.upload(key, body);
+const objectName = `new-object`;
+const uploadedObject = await objectManager.upload(objectName, body);
 // Confirm Object Uploaded
 const objectsList = await objectManager.list({
     Prefix: key,
@@ -73,6 +75,12 @@ await nameManager.set(`myFirstIpnsKey`, uploadedObject.cid, {
 });
 // Enable IPNS Broadcast without updating the IPNS Record
 await nameManager.toggle(`myFirstIpnsKey`, true);
+
+// Delete Object
+await objectManager.delete(objectName);
+
+// Delete Bucket
+await bucketManager.delete(bucketName)
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk
