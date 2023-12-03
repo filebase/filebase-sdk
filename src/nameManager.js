@@ -8,9 +8,9 @@ class NameManager {
    * @summary Creates a new instance of the constructor.
    * @param {string} key - The key required for authorization.
    * @param {string} secret - The secret required for authorization.
+   * @param {string} [endpoint="https://api.filebase.io/v1/names"] - The endpoint URL for the API.
    *
    * @return {object} - The instance of the constructor.
-   *
    */
   constructor(key, secret, endpoint = "https://api.filebase.io/v1/names") {
     const encodedToken = Buffer.from(`${key}:${secret}`).toString("base64");
@@ -22,18 +22,29 @@ class NameManager {
   }
 
   /**
-
-   * @summary Creates a new object with the given name and CID.
+   * @summary Creates a new IPNS name with the given name and CID.
    * @param {string} name - The name of the object.
-   * @param {string} [cid] - The CID of the object. Default value is "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn".
-   * @returns {Promise<*>} - A Promise that resolves with the response JSON.
+   * @param {null|string} [cid] - The CID of the object. Default value is null.
+   * @param {object} [options] - Additional options for the IPNS name.
+   * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
+   * @returns {Promise<any>} - A Promise that resolves with the response JSON.
    */
-  async create(name, cid = "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn") {
+  async create(
+    name,
+    cid = null,
+    options = {
+      enabled: true,
+    },
+  ) {
+    if (typeof name !== "string") {
+      throw new Error(`param [name] is required and must be a string`);
+    }
     const createResponse = await this.#client.request({
       method: "POST",
       data: {
         name,
         cid,
+        enabled: options?.enabled !== false,
       },
     });
     return createResponse.json();
@@ -41,17 +52,19 @@ class NameManager {
 
   /**
    * @summary Imports a user's IPNS private key.
-   * @param {String} name - The name of the user.
-   * @param {String} privateKey - The user's private key.
-   * @param {String} [cid="QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"] - The CID (Content Identifier) of the data.
+   * @param {string} name - The name of the user.
+   * @param {string} privateKey - The user's private key.
+   * @param {null|string} [cid=null] - The CID (Content Identifier) of the data.
    *
    * @returns {Promise<Object>} - A Promise that resolves to the server response.
    */
-  async import(
-    name,
-    privateKey,
-    cid = "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn",
-  ) {
+  async import(name, privateKey, cid = null) {
+    if (typeof name !== "string") {
+      throw new Error(`param [name] is required and must be a string`);
+    }
+    if (typeof privateKey !== "string") {
+      throw new Error(`param [privateKey] is required and must be a string`);
+    }
     const importResponse = await this.#client.request({
       method: "POST",
       data: {
@@ -67,15 +80,22 @@ class NameManager {
    * @summary Sets the specified name with the given cid.
    * @param {string} name - The name to set.
    * @param {string} cid - The cid to associate with the name.
+   * @param {Object} options - The options for the set operation.
+   * @param {boolean} [options.enabled] - Whether the name is enabled (default: false).
+   *
    * @returns {Promise<any>} - A Promise that resolves with the response data from the server.
    */
-  async set(name, cid) {
+  async set(name, cid, options = {}) {
+    const setOptions = {
+      cid,
+    };
+    if (options?.enabled) {
+      setOptions.enabled = Boolean(options.enabled);
+    }
     const setResponse = await this.#client.request({
       method: "PUT",
       url: `/${name}`,
-      data: {
-        cid,
-      },
+      data: setOptions,
     });
     return setResponse.json();
   }
@@ -135,6 +155,23 @@ class NameManager {
       url: `/${name}`,
     });
     return createResponse.status === 200;
+  }
+
+  /**
+   * @summary Toggles the enabled state of a given IPNS name.
+   * @param {string} name - The name of the item to toggle.
+   * @param {boolean} enabled - The new enabled state.
+   * @returns {Promise<any>} - A promise that resolves to the response data.
+   */
+  async toggle(name, enabled) {
+    const enableResponse = await this.#client.request({
+      method: "PUT",
+      url: `/${name}`,
+      data: {
+        enabled: enabled,
+      },
+    });
+    return enableResponse.json();
   }
 }
 

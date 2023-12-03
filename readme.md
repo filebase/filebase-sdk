@@ -9,7 +9,8 @@ downloads, and seamless integration with IPFS and IPNS (InterPlanetary Naming Sy
 operations. The SDK supports advanced data tasks like compiling files into CAR (Content Addressable aRchive) formats and
 ensures secure transactions through strong authentication. Designed for varied applications, the Filebase SDK is ideal 
 for scenarios demanding the dependability of cloud storage combined with the advantages of decentralized, peer-to-peer 
-storage, catering to diverse needs such as content distribution, data backup, and archival.
+storage, catering to diverse needs such as content distribution, data backup, and archival.  Developing InterPlanetary
+Applications has never been easier.
 
 ### JS Client
 
@@ -34,13 +35,44 @@ To use the library in your project, use npm or yarn to install the [`filebase-sd
 
 **node.js**
 ````js
+// Import Classes
 import {BucketManager, ObjectManager, NameManager} from 'filebase-sdk'
 
-createBucket S3
+// Setup S3 Config
+const s3Config = {};
 
-uploadObject IPFS
+// Initialize BucketManager
+const bucketManager = new BucketManager(s3Config);
+// Create bucket
+const bucketName = `create-bucket-[random string]`;
+await bucketManager.create(bucketName);
+// List buckets
+const bucketsList = await bucketManager.list();
+console.dir(bucketsList);
 
-createAndPublishName IPNS
+// Initialize ObjectManager
+const objectManager = new ObjectManager(s3Config, bucketName);
+// Upload Object
+const uploadedObject = await objectManager.upload(key, body);
+// Confirm Object Uploaded
+const objectsList = await objectManager.list({
+    Prefix: key,
+    MaxKeys: 1,
+  });
+console.dir(objectsList)
+
+// Initialize NameManager
+const nameManager = new NameManager(s3Config);
+// Create New IPNS Name with Broadcast Disabled
+const ipnsName = await nameManager.create(`myFirstIpnsKey`, uploadedObject.cid, {
+  enabled: true
+});
+// Update IPNS Value and Optionally Enable the Broadcast
+await nameManager.set(`myFirstIpnsKey`, uploadedObject.cid, {
+  enabled: true,
+});
+// Enable IPNS Broadcast without updating the IPNS Record
+await nameManager.toggle(`myFirstIpnsKey`, true);
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk
