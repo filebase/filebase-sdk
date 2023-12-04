@@ -2,7 +2,7 @@ import axios from "axios";
 
 /** Provides methods for managing names in an REST endpoint. */
 class NameManager {
-  #DEFAULT_ENDPOINT = "https://api.filebase.io/v1/names";
+  #DEFAULT_ENDPOINT = "https://api.filebase.io";
   #DEFAULT_TIMEOUT = 60000;
 
   #client;
@@ -13,7 +13,7 @@ class NameManager {
    * @param {object} clientConfig.credentials - The credentials object for authentication.
    * @param {string} clientConfig.credentials.accessKeyId - The access key ID for authentication.
    * @param {string} clientConfig.credentials.secretAccessKey - The secret access key for authentication.
-   * @param {string} [clientConfig.endpoint="https://api.filebase.io/v1/names"] - The API endpoint URL.
+   * @param {string} [clientConfig.endpoint="https://api.filebase.io"] - The API endpoint URL.
    *
    * @return {object} - The instance of the constructor.
    */
@@ -33,11 +33,11 @@ class NameManager {
     const encodedToken = Buffer.from(
         `${clientConfig.credentials.accessKeyId}:${clientConfig.credentials.secretAccessKey}`,
       ).toString("base64"),
-      baseURL = clientConfig.endpoint || this.#DEFAULT_ENDPOINT;
+      baseURL = `${clientConfig.endpoint || this.#DEFAULT_ENDPOINT}/v1/names`;
     this.#client = axios.create({
       baseURL: baseURL,
       timeout: this.#DEFAULT_TIMEOUT,
-      headers: { Authorization: encodedToken },
+      headers: { Authorization: `Bearer ${encodedToken}` },
     });
   }
 
@@ -65,21 +65,18 @@ class NameManager {
   /**
    * @summary Creates a new IPNS name with the given name as the label and CID.
    * @param {string} label - The label of the new IPNS name.
-   * @param {string} [cid] - The CID of the IPNS name. Default value is null.
+   * @param {string} cid - The CID of the IPNS name.
    * @param {object} [options] - Additional options for the IPNS name.
    * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
    * @returns {Promise<Object>} - A Promise that resolves with the response JSON.
    */
   async create(
     label,
-    cid = undefined,
+    cid,
     options = {
       enabled: true,
     },
   ) {
-    if (typeof label !== "string") {
-      throw new Error(`param [label] is required and must be a string`);
-    }
     const createResponse = await this.#client.request({
       method: "POST",
       data: {
@@ -88,33 +85,27 @@ class NameManager {
         enabled: options?.enabled !== false,
       },
     });
-    return createResponse.json();
+    return createResponse.data;
   }
 
   /**
    * @summary Imports a user's IPNS private key.
    * @param {string} label - The label for the IPNS name.
+   * @param {string} cid - The CID (Content Identifier) of the data.
    * @param {string} privateKey - The existing private key encoded in Base64.
-   * @param {null|string} [cid=null] - The CID (Content Identifier) of the data.
    *
    * @returns {Promise<Object>} - A Promise that resolves to the server response.
    */
-  async import(label, privateKey, cid = null) {
-    if (typeof label !== "string") {
-      throw new Error(`param [name] is required and must be a string`);
-    }
-    if (typeof privateKey !== "string") {
-      throw new Error(`param [privateKey] is required and must be a string`);
-    }
+  async import(label, cid, privateKey) {
     const importResponse = await this.#client.request({
       method: "POST",
       data: {
         label,
-        privateKey,
         cid,
+        privateKey,
       },
     });
-    return importResponse.json();
+    return importResponse.data;
   }
 
   /**
@@ -138,7 +129,7 @@ class NameManager {
       url: `/${label}`,
       data: setOptions,
     });
-    return setResponse.status === 200;
+    return setResponse.data;
   }
 
   /**
@@ -150,8 +141,11 @@ class NameManager {
     const getResponse = await this.#client.request({
       method: "GET",
       url: typeof label === "string" ? `/${label}` : undefined,
+      validateStatus: (status) => {
+        return status === 200 || status === 404;
+      },
     });
-    return getResponse.json();
+    return getResponse.status === 200 ? getResponse.data : false;
   }
 
   /**
@@ -164,7 +158,7 @@ class NameManager {
       method: "DELETE",
       url: `/${label}`,
     });
-    return createResponse.status === 200;
+    return createResponse.status === 202;
   }
 
   /**
@@ -181,7 +175,7 @@ class NameManager {
         enabled: enabled,
       },
     });
-    return Boolean(enableResponse.status === 200);
+    return enableResponse.status === 200;
   }
 }
 
