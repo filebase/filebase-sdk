@@ -136,7 +136,7 @@ test("list objects", async () => {
   const objectManager = new ObjectManager(s3Config, listTestBucket);
 
   const bucketList = await objectManager.list({
-    MaxKeys: 5,
+    MaxKeys: 50,
     Prefix: `list-object-test-`,
   });
   assert.equal(bucketList.length, 26);

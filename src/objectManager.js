@@ -17,10 +17,9 @@ import { unixfs } from "@helia/unixfs";
 import { v4 as uuidv4 } from "uuid";
 import path from "node:path";
 import os from "node:os";
-import { createWriteStream, createReadStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import { Readable } from "node:stream";
-import { once } from "node:events";
+import { createWriteStream, createReadStream } from "node:fs";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
@@ -69,12 +68,13 @@ class ObjectManager {
   async upload(key, source, bucket = this.#defaultBucket) {
     // Setup Upload Options
     const uploadUUID = uuidv4(),
-      temporaryBlockstorePath = path.resolve(
+      temporaryBlockstoreDir = path.resolve(
         os.tmpdir(),
         "filebase-sdk",
         "uploads",
         uploadUUID,
       ),
+      temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`,
       uploadOptions = {
         client: this.client,
         params: {
@@ -88,43 +88,48 @@ class ObjectManager {
       };
 
     // Pack Multiple Files into CAR file for upload
-    let parsedEntries = {},
-      carExporter;
+    let parsedEntries = {};
     if (Array.isArray(source)) {
       // Mark Upload as a CAR file import
       uploadOptions.params.Metadata = {
         import: "car",
       };
 
-      await mkdir(temporaryBlockstorePath, { recursive: true });
-      const temporaryFsBlockstore = new FsBlockstore(temporaryBlockstorePath),
-        heliaFs = unixfs({
-          blockstore: temporaryFsBlockstore,
-        });
+      try {
+        await mkdir(temporaryBlockstoreDir, { recursive: true });
+        const temporaryFsBlockstore = new FsBlockstore(temporaryBlockstoreDir),
+          heliaFs = unixfs({
+            blockstore: temporaryFsBlockstore,
+          });
 
-      for (let sourceEntry of source) {
-        sourceEntry.path =
-          sourceEntry.path[0] === "/"
-            ? `/${uploadUUID}${sourceEntry.path}`
-            : `/${uploadUUID}/${sourceEntry.path}`;
+        for (let sourceEntry of source) {
+          sourceEntry.path =
+            sourceEntry.path[0] === "/"
+              ? `/${uploadUUID}${sourceEntry.path}`
+              : `/${uploadUUID}/${sourceEntry.path}`;
+        }
+        for await (const entry of heliaFs.addAll(source)) {
+          parsedEntries[entry.path] = entry;
+        }
+        const rootEntry = parsedEntries[uploadUUID];
+
+        // Get carFile stream here
+        const carExporter = car({ blockstore: temporaryFsBlockstore }),
+          { writer, out } = CarWriter.create([rootEntry.cid]),
+          output = createWriteStream(temporaryCarFilePath);
+        Readable.from(out).pipe(output);
+        await carExporter.export(rootEntry.cid, writer);
+
+        // Upload carFile via S3
+        uploadOptions.params.Body = createReadStream(temporaryCarFilePath);
+        const parallelUploads3 = new Upload(uploadOptions);
+        await parallelUploads3.done();
+        await temporaryFsBlockstore.close();
+      } finally {
+        await rm(temporaryBlockstoreDir, { recursive: true });
       }
-      for await (const entry of heliaFs.addAll(source)) {
-        parsedEntries[entry.path] = entry;
-      }
-      const rootEntry = parsedEntries[uploadUUID];
-
-      // Get carFile stream here and override body
-      carExporter = car({ blockstore: temporaryFsBlockstore });
-      const { writer, out } = CarWriter.create([rootEntry.cid]);
-      const carPromise = Readable.from(out);
-      await carExporter.export(rootEntry.cid, writer);
-
-      // Upload file/carFile via S3
-      const parallelUploads3 = new Upload(uploadOptions);
-      await parallelUploads3.done();
-      await carPromise;
     } else {
-      // Upload file/carFile via S3
+      // Upload file via S3
       const parallelUploads3 = new Upload(uploadOptions);
       await parallelUploads3.done();
     }
@@ -140,7 +145,7 @@ class ObjectManager {
         process.env.NODE_ENV === "test" ? 1234567890 : headResult.Metadata.cid;
 
     // Delete Temporary Blockstore
-    await rm(temporaryBlockstorePath, { recursive: true, force: true });
+    await rm(temporaryBlockstoreDir, { recursive: true, force: true });
 
     if (Object.keys(parsedEntries).length === 0) {
       return {
@@ -245,11 +250,14 @@ class ObjectManager {
       destinationKey: undefined,
     },
   ) {
-    const command = new CopyObjectCommand({
-      CopySource: `${sourceBucket}/${sourceKey}`,
-      Bucket: destinationBucket,
-      Key: destinationKey || sourceKey,
-    });
+    const copySource = `${
+        options?.sourceBucket || this.#defaultBucket
+      }/${sourceKey}`,
+      command = new CopyObjectCommand({
+        CopySource: copySource,
+        Bucket: destinationBucket,
+        Key: options?.destinationKey || sourceKey,
+      });
 
     return await this.client.send(command);
   }
