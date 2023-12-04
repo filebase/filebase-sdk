@@ -65,14 +65,14 @@ class NameManager {
   /**
    * @summary Creates a new IPNS name with the given name as the label and CID.
    * @param {string} label - The label of the new IPNS name.
-   * @param {null|string} [cid] - The CID of the IPNS name. Default value is null.
+   * @param {string} [cid] - The CID of the IPNS name. Default value is null.
    * @param {object} [options] - Additional options for the IPNS name.
    * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
-   * @returns {Promise<any>} - A Promise that resolves with the response JSON.
+   * @returns {Promise<Object>} - A Promise that resolves with the response JSON.
    */
   async create(
     label,
-    cid = null,
+    cid = undefined,
     options = {
       enabled: true,
     },
@@ -118,13 +118,13 @@ class NameManager {
   }
 
   /**
-   * @summary Updates the specified name with the given cid.
+   * @summary Updates the specified name with the given CID.
    * @param {string} label - The label of the name to update.
    * @param {string} cid - The cid to associate with the name.
    * @param {Object} options - The options for the set operation.
    * @param {boolean} [options.enabled] - Whether the name is enabled (default: false).
    *
-   * @returns {Promise<any>} - A Promise that resolves with the response data from the server.
+   * @returns {Promise<boolean>} - A Promise that resolves to true if the IPNS name was updated.
    */
   async update(label, cid, options = {}) {
     const setOptions = {
@@ -138,7 +138,7 @@ class NameManager {
       url: `/${label}`,
       data: setOptions,
     });
-    return setResponse.json();
+    return setResponse.status === 200;
   }
 
   /**
@@ -157,7 +157,7 @@ class NameManager {
   /**
    * @summary Deletes an IPNS name with the given label.
    * @param {string} label - The label of the IPNS name to delete.
-   * @returns {Promise<boolean>} - A promise that resolves to true if the resource is successfully deleted, otherwise false.
+   * @returns {Promise<boolean>} - A promise that resolves to true if the IPNS name was successfully deleted.
    */
   async delete(label) {
     const createResponse = await this.#client.request({
@@ -171,7 +171,7 @@ class NameManager {
    * @summary Toggles the enabled state of a given IPNS name.
    * @param {string} label - The label of the IPNS name to toggle.
    * @param {boolean} enabled - The new enabled state.
-   * @returns {Promise<any>} - A promise that resolves to the response data.
+   * @returns {Promise<boolean>} A promise that resolves to true if the IPNS name was successfully toggled.
    */
   async toggle(label, enabled) {
     const enableResponse = await this.#client.request({
@@ -181,7 +181,7 @@ class NameManager {
         enabled: enabled,
       },
     });
-    return enableResponse.json();
+    return Boolean(enableResponse.status === 200);
   }
 }
 

@@ -159,7 +159,7 @@ class ObjectManager {
    * @summary Downloads an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be downloaded.
    * @param {string} [bucket] - The name of the bucket to download from. If not provided, the default bucket will be used.
-   * @returns {Promise<Buffer>} - A promise that resolves with the contents of the downloaded object as a Buffer.
+   * @returns {Promise<Object>} - A promise that resolves with the contents of the downloaded object as a Stream.
    */
   async download(key, bucket = this.#defaultBucket) {
     const command = new GetObjectCommand({
