@@ -79,6 +79,10 @@ await nameManager.toggle(`myFirstIpnsKey`, true);
 const myIpnsNames = await nameManager.list();
 // List Specific IPNS Name
 const myIpnsName = await nameManager.list(`myFirstIpnsKey`);
+// Import IPNS Name
+const myImportedIpnsName = await nameManager.import(`myImportedKey`, uploadedObject.cid, Base64EncodedPrivateKey, {
+  enabled: false,
+})
 
 // Delete Object
 await objectManager.delete(objectName);

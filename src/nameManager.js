@@ -93,16 +93,25 @@ class NameManager {
    * @param {string} label - The label for the IPNS name.
    * @param {string} cid - The CID (Content Identifier) of the data.
    * @param {string} privateKey - The existing private key encoded in Base64.
-   *
+   * @param {object} [options] - Additional options for the IPNS name.
+   * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
    * @returns {Promise<Object>} - A Promise that resolves to the server response.
    */
-  async import(label, cid, privateKey) {
+  async import(
+    label,
+    cid,
+    privateKey,
+    options = {
+      enabled: true,
+    },
+  ) {
     const importResponse = await this.#client.request({
       method: "POST",
       data: {
         label,
         cid,
         privateKey,
+        enabled: options?.enabled !== false,
       },
     });
     return importResponse.data;
