@@ -23,7 +23,7 @@ import { createWriteStream, createReadStream } from "node:fs";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
-  client;
+  #client;
   #defaultBucket;
   #maxConcurrentUploads = 4;
 
@@ -41,10 +41,7 @@ class ObjectManager {
       maxConcurrentUploads: 4,
     },
   ) {
-    /**
-     * @property {Object} client  Represents the client object for S3 API.
-     */
-    this.client = new S3Client(clientConfig);
+    this.#client = new S3Client(clientConfig);
     this.#defaultBucket = defaultBucket;
 
     if (options?.maxConcurrentUploads) {
@@ -76,7 +73,7 @@ class ObjectManager {
       ),
       temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`,
       uploadOptions = {
-        client: this.client,
+        client: this.#client,
         params: {
           Bucket: bucket,
           Key: key,
@@ -140,7 +137,7 @@ class ObjectManager {
         Key: key,
         Body: source,
       }),
-      headResult = await this.client.send(command),
+      headResult = await this.#client.send(command),
       responseCid =
         process.env.NODE_ENV === "test" ? 1234567890 : headResult.Metadata.cid;
 
@@ -169,7 +166,7 @@ class ObjectManager {
         Bucket: bucket,
         Key: key,
       }),
-      response = await this.client.send(command);
+      response = await this.#client.send(command);
 
     return response.Body;
   }
@@ -203,7 +200,7 @@ class ObjectManager {
       bucketContents = [];
     while (isTruncated && bucketContents.length < limit) {
       const { Contents, IsTruncated, NextContinuationToken } =
-        await this.client.send(command);
+        await this.#client.send(command);
       if (typeof Contents === "undefined") {
         isTruncated = false;
         continue;
@@ -227,7 +224,7 @@ class ObjectManager {
       Key: key,
     });
 
-    return await this.client.send(command);
+    return await this.#client.send(command);
   }
 }
 
