@@ -2,23 +2,64 @@ import axios from "axios";
 
 /** Provides methods for managing names in an REST endpoint. */
 class NameManager {
+  #DEFAULT_ENDPOINT = "https://api.filebase.io/v1/names";
+  #DEFAULT_TIMEOUT = 60000;
+
   #client;
 
   /**
    * @summary Creates a new instance of the constructor.
-   * @param {string} key - The key required for authorization.
-   * @param {string} secret - The secret required for authorization.
-   * @param {string} [endpoint="https://api.filebase.io/v1/names"] - The endpoint URL for the API.
+   * @param {object} clientConfig - The configuration object for the client.
+   * @param {object} clientConfig.credentials - The credentials object for authentication.
+   * @param {string} clientConfig.credentials.accessKeyId - The access key ID for authentication.
+   * @param {string} clientConfig.credentials.secretAccessKey - The secret access key for authentication.
+   * @param {string} [clientConfig.endpoint="https://api.filebase.io/v1/names"] - The API endpoint URL.
    *
    * @return {object} - The instance of the constructor.
    */
-  constructor(key, secret, endpoint = "https://api.filebase.io/v1/names") {
-    const encodedToken = Buffer.from(`${key}:${secret}`).toString("base64");
+  constructor(
+    clientConfig = {
+      credentials: {
+        accessKeyId: null,
+        secretAccessKey: null,
+      },
+    },
+  ) {
+    const configErrors = this.#validateClientConfig(clientConfig);
+    if (configErrors.length > 0) {
+      throw new Error(configErrors.join("\n"));
+    }
+
+    const encodedToken = Buffer.from(
+        `${clientConfig.credentials.accessKeyId}:${clientConfig.credentials.secretAccessKey}`,
+      ).toString("base64"),
+      baseURL = clientConfig.endpoint || this.#DEFAULT_ENDPOINT;
     this.#client = axios.create({
-      baseURL: endpoint,
-      timeout: 60000,
+      baseURL: baseURL,
+      timeout: this.#DEFAULT_TIMEOUT,
       headers: { Authorization: encodedToken },
     });
+  }
+
+  /**
+   * @summary Validates the client configuration.
+   * @param {object} clientConfig - The client configuration object.
+   * @returns {string[]} - An array containing any validation errors found in the client configuration.
+   */
+  #validateClientConfig(clientConfig) {
+    let configErrors = [];
+
+    if (typeof clientConfig?.credentials?.accessKeyId !== "string") {
+      configErrors.push("clientConfig must contain credentials.accessKeyId");
+    }
+
+    if (typeof clientConfig?.credentials?.secretAccessKey !== "string") {
+      configErrors.push(
+        "clientConfig must contain credentials.secretAccessKey",
+      );
+    }
+
+    return configErrors;
   }
 
   /**

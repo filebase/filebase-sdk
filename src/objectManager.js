@@ -30,13 +30,13 @@ class ObjectManager {
 
   /**
    * @summary Creates a new instance of the class.
-   * @param {S3ClientConfig} S3ClientConfig - The configuration object for the S3 client.
+   * @param {object} clientConfig - The configuration object for the S3 client.
    * @param {string} defaultBucket - The default S3 bucket to be used.
    * @param {object} options - Optional settings for the constructor.
    * @param {number} options.maxConcurrentUploads - The maximum number of concurrent uploads.
    */
   constructor(
-    S3ClientConfig,
+    clientConfig,
     defaultBucket,
     options = {
       maxConcurrentUploads: 4,
@@ -45,7 +45,7 @@ class ObjectManager {
     /**
      * @property {Object} client  Represents the client object for S3 API.
      */
-    this.client = new S3Client(S3ClientConfig);
+    this.client = new S3Client(clientConfig);
     this.#defaultBucket = defaultBucket;
 
     if (options?.maxConcurrentUploads) {

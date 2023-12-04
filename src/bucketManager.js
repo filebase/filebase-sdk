@@ -11,13 +11,13 @@ class BucketManager {
 
   /**
    * @summary Creates a new instance of the S3Client class.
-   * @param {Object} S3ClientConfig - The configuration object for the S3Client.
+   * @param {Object} clientConfig - The configuration object for the S3Client.
    */
-  constructor(S3ClientConfig) {
+  constructor(clientConfig) {
     /**
      * @property {Object} client Represents the client object for S3 API.
      */
-    this.client = new S3Client(S3ClientConfig);
+    this.client = new S3Client(clientConfig);
   }
 
   /**
