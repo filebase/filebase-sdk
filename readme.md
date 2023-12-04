@@ -75,12 +75,19 @@ await nameManager.set(`myFirstIpnsKey`, uploadedObject.cid, {
 });
 // Enable IPNS Broadcast without updating the IPNS Record
 await nameManager.toggle(`myFirstIpnsKey`, true);
+// List IPNS Names
+const myIpnsNames = await nameManager.list();
+// List Specific IPNS Name
+const myIpnsName = await nameManager.list(`myFirstIpnsKey`);
 
 // Delete Object
 await objectManager.delete(objectName);
 
 // Delete Bucket
-await bucketManager.delete(bucketName)
+await bucketManager.delete(bucketName);
+
+// Delete Name
+await nameManager.delete(`myFirstIpnsKey`);
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk
