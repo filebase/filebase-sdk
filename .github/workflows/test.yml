@@ -14,3 +14,13 @@ jobs:
           node-version: '20.x'
       - run: npm ci
       - run: npm test
+        env:
+          TEST_IPNS_ENDPOINT: ${{ vars.TEST_IPNS_ENDPOINT }}
+          TEST_IPNS_CID: ${{ vars.TEST_IPNS_CID }}
+          TEST_IPNS_KEY: ${{ secrets.TEST_IPNS_KEY }}
+          TEST_IPNS_SECRET: ${{ secrets.TEST_IPNS_SECRET }}
+          TEST_IPNS_PRIVATE_KEY: ${{ secrets.TEST_IPNS_PRIVATE_KEY }}
+          TEST_S3_ENDPOINT: ${{ vars.TEST_S3_ENDPOINT }}
+          TEST_S3_REGION: ${{ vars.TEST_S3_REGION }}
+          TEST_S3_KEY: ${{ secrets.TEST_S3_KEY }}
+          TEST_S3_SECRET: ${{ secrets.TEST_S3_SECRET }}
