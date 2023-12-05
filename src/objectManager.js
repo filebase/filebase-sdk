@@ -1,6 +1,5 @@
 // S3 Imports
 import {
-  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -9,17 +8,17 @@ import {
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 // Helia Imports
-import { FsBlockstore } from "blockstore-fs";
 import { CarWriter } from "@ipld/car";
 import { car } from "@helia/car";
 import { unixfs } from "@helia/unixfs";
+import { FsBlockstore } from "blockstore-fs";
 // Utility Imports
-import { v4 as uuidv4 } from "uuid";
-import path from "node:path";
-import os from "node:os";
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { Readable } from "node:stream";
-import { createWriteStream, createReadStream } from "node:fs";
+import { v4 as uuidv4 } from "uuid";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
@@ -123,7 +122,8 @@ class ObjectManager {
         await parallelUploads3.done();
         await temporaryFsBlockstore.close();
       } finally {
-        await rm(temporaryBlockstoreDir, { recursive: true });
+        // Delete Temporary Blockstore
+        await rm(temporaryBlockstoreDir, { recursive: true, force: true });
       }
     } else {
       // Upload file via S3
@@ -138,11 +138,7 @@ class ObjectManager {
         Body: source,
       }),
       headResult = await this.#client.send(command),
-      responseCid =
-        process.env.NODE_ENV === "test" ? 1234567890 : headResult.Metadata.cid;
-
-    // Delete Temporary Blockstore
-    await rm(temporaryBlockstoreDir, { recursive: true, force: true });
+      responseCid = headResult.Metadata.cid;
 
     if (Object.keys(parsedEntries).length === 0) {
       return {
@@ -185,6 +181,9 @@ class ObjectManager {
       MaxKeys: 1000,
     },
   ) {
+    if (options?.MaxKeys && options.MaxKeys > 100000) {
+      throw new Error(`MaxKeys Maximum value is 100000`);
+    }
     const bucket = options?.Bucket || this.#defaultBucket,
       limit = options?.MaxKeys || 1000,
       commandOptions = {

@@ -7,18 +7,19 @@ import { writeFile } from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import os from "node:os";
 
-const s3Config = {
-  endpoint: process.env.TEST_S3_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.TEST_S3_KEY,
-    secretAccessKey: process.env.TEST_S3_SECRET,
-  },
-  region: process.env.TEST_S3_REGION,
-};
+const TEST_PREFIX = Date.now(),
+  S3_CONFIG = {
+    endpoint: process.env.TEST_S3_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.TEST_S3_KEY,
+      secretAccessKey: process.env.TEST_S3_SECRET,
+    },
+    region: process.env.TEST_S3_REGION,
+  };
 
 async function createBucket(name) {
   // Initialize BucketManager
-  const bucketManager = new BucketManager(s3Config);
+  const bucketManager = new BucketManager(S3_CONFIG);
 
   // Create bucket with name
   const bucketNameToCreate = name;
@@ -35,7 +36,7 @@ async function createBucket(name) {
 
 async function uploadObject(bucket, key, body) {
   // Initialize ObjectManager
-  const objectManager = new ObjectManager(s3Config, bucket);
+  const objectManager = new ObjectManager(S3_CONFIG, bucket);
 
   // Upload Object
   await objectManager.upload(key, body);
@@ -50,9 +51,50 @@ async function uploadObject(bucket, key, body) {
   return typeof uploadedObject !== "undefined";
 }
 
+async function deleteObject(bucket, key) {
+  // Initialize ObjectManager
+  const objectManager = new ObjectManager(S3_CONFIG, bucket);
+
+  // Delete Object
+  await objectManager.delete(key);
+  return true;
+}
+
+test("delete object", async () => {
+  // Create bucket `delete-object-test-pass`
+  const deleteTestBucket = `${TEST_PREFIX}-delete-object-test-pass`;
+  await createBucket(deleteTestBucket);
+
+  // Upload object `delete-object-test`
+  const objectNameToCreate = `delete-object-test`;
+  const uploaded = await uploadObject(
+    deleteTestBucket,
+    objectNameToCreate,
+    Buffer.from("delete object", "utf-8"),
+  );
+  if (uploaded === false) {
+    throw Error(`Failed to create object [delete-object-test]`);
+  }
+
+  // Initialize ObjectManager
+  const objectManager = new ObjectManager(S3_CONFIG, deleteTestBucket);
+
+  // Delete object `delete-object-test`
+  await objectManager.delete(objectNameToCreate);
+
+  // List bucket and assert new object doesn't exist
+  const existingObjects = await objectManager.list({
+      Prefix: objectNameToCreate,
+      MaxKeys: 1,
+    }),
+    uploadedObject =
+      existingObjects.length > 0 ? existingObjects[0] : undefined;
+  assert.equal(typeof uploadedObject, "undefined");
+});
+
 test("upload object", async () => {
   // Create Bucket `create-object-test-pass
-  const uploadTestBucket = `create-object-test-pass`;
+  const uploadTestBucket = `${TEST_PREFIX}-create-object-test-pass`;
   await createBucket(uploadTestBucket);
 
   // Upload object `create-object-test`
@@ -61,12 +103,14 @@ test("upload object", async () => {
     `create-object-test`,
     Buffer.from("upload object", "utf-8"),
   );
+
   assert.strictEqual(uploaded, true);
+  await deleteObject(uploadTestBucket, `create-object-test`);
 });
 
 test("upload directory", async () => {
   // Create Bucket `create-object-test-pass
-  const uploadDirectoryTestBucket = `create-directory-test-pass`;
+  const uploadDirectoryTestBucket = `${TEST_PREFIX}-create-directory-test-pass`;
   await createBucket(uploadDirectoryTestBucket);
 
   // Upload object `create-object-test`
@@ -89,11 +133,12 @@ test("upload directory", async () => {
     ],
   );
   assert.strictEqual(uploaded, true);
+  await deleteObject(uploadDirectoryTestBucket, `create-directory-test`);
 });
 
 test("download object", async () => {
   // Create bucket `download-object-test-pass`
-  const downloadTestBucket = `download-object-test-pass`;
+  const downloadTestBucket = `${TEST_PREFIX}-download-object-test-pass`;
   await createBucket(downloadTestBucket);
 
   // Upload object `download-object-test`
@@ -108,17 +153,18 @@ test("download object", async () => {
   }
 
   // Download object `download-object-test` and assert it completes
-  const objectManager = new ObjectManager(s3Config, downloadTestBucket);
+  const objectManager = new ObjectManager(S3_CONFIG, downloadTestBucket);
   const downloadStream = await objectManager.download(objectNameToCreate),
     downloadFilename = uuidv4(),
     downloadPath = Path.resolve(os.tmpdir(), downloadFilename),
     writeFileResult = await writeFile(downloadPath, downloadStream);
   assert.strictEqual(typeof writeFileResult, "undefined");
+  await deleteObject(downloadTestBucket, objectNameToCreate);
 });
 
 test("list objects", async () => {
   // Create bucket `list-objects-test-pass`
-  const listTestBucket = `list-objects-test-pass`;
+  const listTestBucket = `${TEST_PREFIX}-list-objects-test-pass`;
   await createBucket(listTestBucket);
 
   let createdObjectCount = 0;
@@ -133,43 +179,19 @@ test("list objects", async () => {
     createdObjectCount++;
   }
 
-  const objectManager = new ObjectManager(s3Config, listTestBucket);
+  const objectManager = new ObjectManager(S3_CONFIG, listTestBucket);
 
   const bucketList = await objectManager.list({
     MaxKeys: 50,
     Prefix: `list-object-test-`,
   });
   assert.equal(bucketList.length, 26);
-});
 
-test("delete object", async () => {
-  // Create bucket `delete-object-test-pass`
-  const deleteTestBucket = `delete-object-test-pass`;
-  await createBucket(deleteTestBucket);
-
-  // Upload object `delete-object-test`
-  const objectNameToCreate = `delete-object-test`;
-  const uploaded = await uploadObject(
-    deleteTestBucket,
-    objectNameToCreate,
-    Buffer.from("delete object", "utf-8"),
-  );
-  if (uploaded === false) {
-    throw Error(`Failed to create object [delete-object-test]`);
+  let deletedObjectCount = 0;
+  while (createdObjectCount < 26) {
+    // Delete objects `list-object-test-[x]`
+    const objectNameToDelete = `list-object-test-${deletedObjectCount}`;
+    await deleteObject(listTestBucket, objectNameToDelete);
+    deletedObjectCount++;
   }
-
-  // Initialize ObjectManager
-  const objectManager = new ObjectManager(s3Config, deleteTestBucket);
-
-  // Delete object `delete-object-test`
-  await objectManager.delete(objectNameToCreate);
-
-  // List bucket and assert new object doesn't exist
-  const existingObjects = await objectManager.list({
-      Prefix: objectNameToCreate,
-      MaxKeys: 1,
-    }),
-    uploadedObject =
-      existingObjects.length > 0 ? existingObjects[0] : undefined;
-  assert.equal(typeof uploadedObject, "undefined");
 });
