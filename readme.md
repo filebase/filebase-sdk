@@ -17,13 +17,13 @@ Applications has never been easier.
 Install the package using npm
 
 ```shell
-npm install filebase-sdk
+npm install @filebase/sdk
 ```
 
 or yarn:
 
 ```shell
-yarn add filebase-sdk
+yarn add @filebase/sdk
 ```
 
 ### Getting started
@@ -105,13 +105,6 @@ Install the deps with `npm`
 ```console
 # install deps
 npm install
-```
-
-Build code from src with `npm`
-
-```console
-# build from src
-npm run build
 ```
 
 ### Testing

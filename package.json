@@ -1,5 +1,5 @@
 {
-  "name": "filebase-sdk",
+  "name": "@filebase/sdk",
   "version": "1.0.0",
   "description": "",
   "type": "module",
