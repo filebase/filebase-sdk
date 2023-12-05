@@ -60,6 +60,15 @@ async function deleteObject(bucket, key) {
   return true;
 }
 
+async function deleteBucket(bucket) {
+  // Initialize BucketManager
+  const bucketManager = new BucketManager(S3_CONFIG);
+
+  // Delete Bucket
+  await bucketManager.delete(bucket);
+  return true;
+}
+
 test("delete object", async () => {
   // Create bucket `delete-object-test-pass`
   const deleteTestBucket = `${TEST_PREFIX}-delete-object-test-pass`;
@@ -106,6 +115,7 @@ test("upload object", async () => {
 
   assert.strictEqual(uploaded, true);
   await deleteObject(uploadTestBucket, `create-object-test`);
+  await deleteBucket(uploadTestBucket);
 });
 
 test("upload directory", async () => {
@@ -134,6 +144,7 @@ test("upload directory", async () => {
   );
   assert.strictEqual(uploaded, true);
   await deleteObject(uploadDirectoryTestBucket, `create-directory-test`);
+  await deleteBucket(uploadDirectoryTestBucket);
 });
 
 test("download object", async () => {
@@ -160,6 +171,7 @@ test("download object", async () => {
     writeFileResult = await writeFile(downloadPath, downloadStream);
   assert.strictEqual(typeof writeFileResult, "undefined");
   await deleteObject(downloadTestBucket, objectNameToCreate);
+  await deleteBucket(downloadTestBucket);
 });
 
 test("list objects", async () => {
@@ -194,4 +206,5 @@ test("list objects", async () => {
     await deleteObject(listTestBucket, objectNameToDelete);
     deletedObjectCount++;
   }
+  await deleteBucket(listTestBucket);
 });
