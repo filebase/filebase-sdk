@@ -110,7 +110,7 @@ class NameManager {
       data: {
         label,
         cid,
-        privateKey,
+        network_private_key: privateKey,
         enabled: options?.enabled !== false,
       },
     });
