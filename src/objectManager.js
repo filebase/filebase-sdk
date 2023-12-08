@@ -27,11 +27,15 @@ class ObjectManager {
   #maxConcurrentUploads = 4;
 
   /**
+   * @typedef {Object} objectManagerOptions Optional settings for the constructor.
+   * @property {number} maxConcurrentUploads The maximum number of concurrent uploads.
+   */
+
+  /**
    * @summary Creates a new instance of the class.
    * @param {object} clientConfig - The configuration object for the S3 client.
    * @param {string} defaultBucket - The default S3 bucket to be used.
-   * @param {object} options - Optional settings for the constructor.
-   * @param {number} options.maxConcurrentUploads - The maximum number of concurrent uploads.
+   * @param {objectManagerOptions} options - Optional settings for the constructor.
    */
   constructor(
     clientConfig,
@@ -49,6 +53,18 @@ class ObjectManager {
   }
 
   /**
+   * @typedef {Object} entryImportResult
+   * @property {string} cid The CID of the uploaded object
+   * @property {string} path The path of the object
+   */
+
+  /**
+   * @typedef {Object} object
+   * @property {string} cid The CID of the uploaded object
+   * @property {array<entryImportResult>} [entries] If a directory then returns an array of the containing objects
+   */
+
+  /**
    * If the source parameter is an array of objects, it will pack multiple files into a CAR file for upload.
    * The method returns a Promise that resolves to an object containing the CID (Content Identifier) of the uploaded file
    * and an optional entries object when uploading a CAR file.
@@ -59,7 +75,7 @@ class ObjectManager {
    *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
    *    and a 'content' property specifying the content of the file.
    * @param {string} [bucket=this.#defaultBucket] - The bucket name. Default is the value of the defaultBucket property.
-   * @returns {Promise<Object>}
+   * @returns {Promise<object>}
    */
   async upload(key, source, bucket = this.#defaultBucket) {
     // Setup Upload Options
@@ -168,16 +184,24 @@ class ObjectManager {
   }
 
   /**
+   * @typedef {Object} listObjectOptions
+   * @property {string} [Bucket] The name of the bucket. If not provided, the default bucket will be used.
+   * @property {string} [ContinuationToken=null] Continues listing from this objects name.
+   * @property {string} [Delimiter=null] Character used to group keys
+   * @property {number} [MaxKeys=1000] The maximum number of objects to retrieve. Defaults to 1000.
+   */
+
+  /**
    * Retrieves a list of objects from a specified bucket.
    *
-   * @param {Object} options - The options for listing objects.  Accepts S3 SDK ListObjectsRequest parameters.
-   * @param {string} [options.Bucket] - The name of the bucket. If not provided, the default bucket will be used.
-   * @param {number} [options.MaxKeys] - The maximum number of objects to retrieve. Defaults to 1000.
+   * @param {listObjectOptions} options - The options for listing objects.
    * @returns {Promise<Array>} - A promise that resolves to an array of objects.
    */
   async list(
     options = {
       Bucket: this.#defaultBucket,
+      ContinuationToken: null,
+      Delimiter: null,
       MaxKeys: 1000,
     },
   ) {
@@ -214,8 +238,8 @@ class ObjectManager {
   /**
    * @summary Deletes an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be deleted.
-   * @param {string} [bucket=this.#defaultBucket] - The name of the bucket that contains the object. Defaults to the default bucket.
-   * @returns {Promise<*>} - A Promise that resolves with the result of the delete operation.
+   * @param {string} [bucket] - The name of the bucket that contains the object. Defaults to the default bucket.
+   * @returns {Promise<Boolean>} - A Promise that resolves with the result of the delete operation.
    */
   async delete(key, bucket = this.#defaultBucket) {
     const command = new DeleteObjectCommand({
@@ -223,7 +247,8 @@ class ObjectManager {
       Key: key,
     });
 
-    return await this.#client.send(command);
+    await this.#client.send(command);
+    return true;
   }
 }
 

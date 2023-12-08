@@ -9,13 +9,7 @@ class NameManager {
 
   /**
    * @summary Creates a new instance of the constructor.
-   * @param {object} clientConfig - The configuration object for the client.
-   * @param {object} clientConfig.credentials - The credentials object for authentication.
-   * @param {string} clientConfig.credentials.accessKeyId - The access key ID for authentication.
-   * @param {string} clientConfig.credentials.secretAccessKey - The secret access key for authentication.
-   * @param {string} [clientConfig.endpoint="https://api.filebase.io"] - The API endpoint URL.
-   *
-   * @return {object} - The instance of the constructor.
+   * @param {clientConfig} clientConfig - The configuration object for the client.
    */
   constructor(
     clientConfig = {
@@ -43,7 +37,7 @@ class NameManager {
 
   /**
    * @summary Validates the client configuration.
-   * @param {object} clientConfig - The client configuration object.
+   * @param {clientConfig} clientConfig - The client configuration object.
    * @returns {string[]} - An array containing any validation errors found in the client configuration.
    */
   #validateClientConfig(clientConfig) {
@@ -63,12 +57,28 @@ class NameManager {
   }
 
   /**
+   * @typedef {Object} nameOptions
+   * @property {boolean} enabled Whether the name is enabled or not.
+   */
+
+  /**
+   * @typedef {Object} name
+   * @property {string} label Descriptive label for the Key
+   * @property {string} network_key IPNS Key CID
+   * @property {string} cid Value that name Publishes
+   * @property {number} sequence Version Number for the name
+   * @property {boolean} enabled Whether the name is being Published or not
+   * @property {date} published_at Date the name was last published to the DHT
+   * @property {date} created_at Date the name was created
+   * @property {date} updated_at Date the name was last updated
+   */
+
+  /**
    * @summary Creates a new IPNS name with the given name as the label and CID.
    * @param {string} label - The label of the new IPNS name.
    * @param {string} cid - The CID of the IPNS name.
-   * @param {object} [options] - Additional options for the IPNS name.
-   * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
-   * @returns {Promise<Object>} - A Promise that resolves with the response JSON.
+   * @param {nameOptions} [options] - Additional options for the IPNS name.
+   * @returns {Promise<name>} - A Promise that resolves with the response JSON.
    */
   async create(
     label,
@@ -93,9 +103,8 @@ class NameManager {
    * @param {string} label - The label for the IPNS name.
    * @param {string} cid - The CID (Content Identifier) of the data.
    * @param {string} privateKey - The existing private key encoded in Base64.
-   * @param {object} [options] - Additional options for the IPNS name.
-   * @param {boolean} [options.enabled=true] - Whether the IPNS name is enabled or not.
-   * @returns {Promise<Object>} - A Promise that resolves to the server response.
+   * @param {nameOptions} [options] - Additional options for the IPNS name.
+   * @returns {Promise<name>} - A Promise that resolves to the server response.
    */
   async import(
     label,
@@ -121,8 +130,7 @@ class NameManager {
    * @summary Updates the specified name with the given CID.
    * @param {string} label - The label of the name to update.
    * @param {string} cid - The cid to associate with the name.
-   * @param {Object} options - The options for the set operation.
-   * @param {boolean} [options.enabled] - Whether the name is enabled (default: false).
+   * @param {nameOptions} options - The options for the set operation.
    *
    * @returns {Promise<boolean>} - A Promise that resolves to true if the IPNS name was updated.
    */
@@ -138,13 +146,13 @@ class NameManager {
       url: `/${label}`,
       data: setOptions,
     });
-    return setResponse.data;
+    return setResponse.status === 200;
   }
 
   /**
    * @summary Returns a list of IPNS name(s)
    * @param {string} [label] - Optional string parameter representing the label of the name to list.
-   * @returns {Promise<Array>} - A promise that resolves to an array of names.
+   * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
    */
   async list(label = null) {
     const getResponse = await this.#client.request({
