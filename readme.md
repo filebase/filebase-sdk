@@ -1,4 +1,4 @@
-<h1 align="center">💾<br/>Filebase SDK</h1>
+<h1 align="center">&#x2022; Filebase SDK &#x2022;</h1>
 <p align="center">Developer Friendly [ <a href="https://docs.ipfs.tech/concepts/what-is-ipfs/" title="What is IPFS?">IPFS</a> | <a href="https://docs.ipfs.tech/concepts/ipns/" title="What is IPNS?">IPNS</a> | S3 ]</p>
 
 ## About
