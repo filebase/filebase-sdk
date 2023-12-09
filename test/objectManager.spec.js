@@ -200,7 +200,7 @@ test("list objects", async () => {
   assert.equal(bucketList.length, 26);
 
   let deletedObjectCount = 0;
-  while (createdObjectCount < 26) {
+  while (deletedObjectCount < 26) {
     // Delete objects `list-object-test-[x]`
     const objectNameToDelete = `list-object-test-${deletedObjectCount}`;
     await deleteObject(listTestBucket, objectNameToDelete);
