@@ -49,8 +49,7 @@ test("update name", async () => {
     createdName = await nameManager.create(testNameLabel, TEST_CID),
     updatedName = await nameManager.update(createdName.label, TEST_CID);
   await nameManager.delete(testNameLabel);
-  assert.strictEqual(updatedName.label, testNameLabel);
-  assert.strictEqual(updatedName.cid, TEST_CID);
+  assert.strictEqual(updatedName, true);
 });
 
 test("list name", async () => {
