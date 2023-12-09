@@ -7,6 +7,7 @@ import {
 
 /** Provides methods for managing buckets in an S3 endpoint. */
 class BucketManager {
+  #DEFAULT_ENDPOINT = "https://s3.filebase.com";
   #client;
 
   /**
@@ -19,10 +20,11 @@ class BucketManager {
    *       accessKeyId: "KEY_FROM_DASHBOARD",
    *       secretAccessKey: "SECRET_FROM_DASHBOARD",
    *   },
-   *   endpoint: "https://s3.filebase.com"
    * });
    */
   constructor(clientConfiguration) {
+    clientConfiguration.endpoint =
+      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
     clientConfiguration.region = clientConfiguration.region || "us-east-1";
     this.#client = new S3Client(clientConfiguration);
   }

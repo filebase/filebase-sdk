@@ -17,7 +17,6 @@ class NameManager {
    *       accessKeyId: "KEY_FROM_DASHBOARD",
    *       secretAccessKey: "SECRET_FROM_DASHBOARD",
    *   },
-   *   endpoint: "https://api.filebase.io"
    * });
    */
   constructor(
@@ -28,6 +27,8 @@ class NameManager {
       },
     },
   ) {
+    clientConfiguration.endpoint =
+      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
     const configErrors = this.#validateclientConfiguration(clientConfiguration);
     if (configErrors.length > 0) {
       throw new Error(configErrors.join("\n"));
@@ -36,9 +37,7 @@ class NameManager {
     const encodedToken = Buffer.from(
         `${clientConfiguration.credentials.accessKeyId}:${clientConfiguration.credentials.secretAccessKey}`,
       ).toString("base64"),
-      baseURL = `${
-        clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT
-      }/v1/names`;
+      baseURL = `${clientConfiguration.endpoint}/v1/names`;
     this.#client = axios.create({
       baseURL: baseURL,
       timeout: this.#DEFAULT_TIMEOUT,

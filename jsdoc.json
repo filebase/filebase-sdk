@@ -17,6 +17,7 @@
     "theme_opts": {
       "title": "Filebase SDK",
       "homepageTitle": "Filebase SDK",
+      "favicon": "https://console.filebase.com/favicon.ico",
       "default_theme": "fallback-dark",
       "sort": false,
       "menu": [{

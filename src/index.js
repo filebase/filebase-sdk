@@ -5,7 +5,6 @@ import NameManager from "./nameManager.js";
 /**
  * @typedef {Object} clientConfiguration
  * @property {clientConfigurationCredentials} credentials The credentials object for authentication.
- * @property {string} endpoint The API endpoint URL.
  */
 
 /**

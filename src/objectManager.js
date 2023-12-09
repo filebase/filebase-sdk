@@ -22,6 +22,7 @@ import { v4 as uuidv4 } from "uuid";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
+  #DEFAULT_ENDPOINT = "https://s3.filebase.com";
   #client;
   #defaultBucket;
   #maxConcurrentUploads = 4;
@@ -43,7 +44,6 @@ class ObjectManager {
    *       accessKeyId: "KEY_FROM_DASHBOARD",
    *       secretAccessKey: "SECRET_FROM_DASHBOARD",
    *   },
-   *   endpoint: "https://s3.filebase.com"
    * }, "my-default-bucket", {
    *   maxConcurrentUploads: 4
    * });
@@ -55,6 +55,9 @@ class ObjectManager {
       maxConcurrentUploads: 4,
     },
   ) {
+    clientConfiguration.endpoint =
+      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
+    clientConfiguration.region = clientConfiguration.region || "us-east-1";
     this.#client = new S3Client(clientConfiguration);
     this.#defaultBucket = defaultBucket;
 
