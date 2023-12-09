@@ -11,14 +11,20 @@ class BucketManager {
 
   /**
    * @summary Creates a new instance of the S3Client class.
-   * @param {clientConfig} clientConfig - The configuration object for the S3Client.
+   * @param {clientConfiguration} clientConfiguration - The configuration object for the S3Client.
    * @example
-   * import { bucketManager } from "@filebase/sdk";
-   * const bucketManager = new BucketManager(S3_CONFIG);
+   * import { BucketManager } from "@filebase/sdk";
+   * const bucketManager = new BucketManager({
+   *   credentials: {
+   *       accessKeyId: "KEY_FROM_DASHBOARD",
+   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
+   *   },
+   *   endpoint: "https://s3.filebase.com"
+   * });
    */
-  constructor(clientConfig) {
-    clientConfig.region = clientConfig.region || "us-east-1";
-    this.#client = new S3Client(clientConfig);
+  constructor(clientConfiguration) {
+    clientConfiguration.region = clientConfiguration.region || "us-east-1";
+    this.#client = new S3Client(clientConfiguration);
   }
 
   /**

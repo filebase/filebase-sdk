@@ -9,25 +9,36 @@ class NameManager {
 
   /**
    * @summary Creates a new instance of the constructor.
-   * @param {clientConfig} clientConfig - The configuration object for the client.
+   * @param {clientConfiguration} clientConfiguration - The configuration object for the client.
+   * @example
+   * import { NameManager } from "@filebase/sdk";
+   * const nameManager = new NameManager({
+   *   credentials: {
+   *       accessKeyId: "KEY_FROM_DASHBOARD",
+   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
+   *   },
+   *   endpoint: "https://api.filebase.io"
+   * });
    */
   constructor(
-    clientConfig = {
+    clientConfiguration = {
       credentials: {
         accessKeyId: null,
         secretAccessKey: null,
       },
     },
   ) {
-    const configErrors = this.#validateClientConfig(clientConfig);
+    const configErrors = this.#validateclientConfiguration(clientConfiguration);
     if (configErrors.length > 0) {
       throw new Error(configErrors.join("\n"));
     }
 
     const encodedToken = Buffer.from(
-        `${clientConfig.credentials.accessKeyId}:${clientConfig.credentials.secretAccessKey}`,
+        `${clientConfiguration.credentials.accessKeyId}:${clientConfiguration.credentials.secretAccessKey}`,
       ).toString("base64"),
-      baseURL = `${clientConfig.endpoint || this.#DEFAULT_ENDPOINT}/v1/names`;
+      baseURL = `${
+        clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT
+      }/v1/names`;
     this.#client = axios.create({
       baseURL: baseURL,
       timeout: this.#DEFAULT_TIMEOUT,
@@ -37,29 +48,26 @@ class NameManager {
 
   /**
    * @summary Validates the client configuration.
-   * @param {clientConfig} clientConfig - The client configuration object.
+   * @param {clientConfiguration} clientConfiguration - The client configuration object.
    * @returns {string[]} - An array containing any validation errors found in the client configuration.
    */
-  #validateClientConfig(clientConfig) {
+  #validateclientConfiguration(clientConfiguration) {
     let configErrors = [];
 
-    if (typeof clientConfig?.credentials?.accessKeyId !== "string") {
-      configErrors.push("clientConfig must contain credentials.accessKeyId");
+    if (typeof clientConfiguration?.credentials?.accessKeyId !== "string") {
+      configErrors.push(
+        "clientConfiguration must contain credentials.accessKeyId",
+      );
     }
 
-    if (typeof clientConfig?.credentials?.secretAccessKey !== "string") {
+    if (typeof clientConfiguration?.credentials?.secretAccessKey !== "string") {
       configErrors.push(
-        "clientConfig must contain credentials.secretAccessKey",
+        "clientConfiguration must contain credentials.secretAccessKey",
       );
     }
 
     return configErrors;
   }
-
-  /**
-   * @typedef {Object} nameOptions
-   * @property {boolean} enabled Whether the name is enabled or not.
-   */
 
   /**
    * @typedef {Object} name
@@ -74,11 +82,19 @@ class NameManager {
    */
 
   /**
+   * @typedef {Object} nameOptions
+   * @property {boolean} enabled Whether the name is enabled or not.
+   */
+
+  /**
    * @summary Creates a new IPNS name with the given name as the label and CID.
    * @param {string} label - The label of the new IPNS name.
    * @param {string} cid - The CID of the IPNS name.
    * @param {nameOptions} [options] - Additional options for the IPNS name.
    * @returns {Promise<name>} - A Promise that resolves with the response JSON.
+   * @example
+   * // Create IPNS name with label of `create-name-example` and CID of `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
+   * await nameManager.create(`create-name-example`, `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`);
    */
   async create(
     label,
@@ -105,6 +121,14 @@ class NameManager {
    * @param {string} privateKey - The existing private key encoded in Base64.
    * @param {nameOptions} [options] - Additional options for the IPNS name.
    * @returns {Promise<name>} - A Promise that resolves to the server response.
+   * @example
+   * // Import IPNS private key with label of `create-name-example`, CID of `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
+   * // and a private key encoded with base64
+   * await nameManager.import(
+   *  `create-name-example`,
+   *  `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
+   *  `BASE64_ENCODED_PRIVATEKEY`
+   * );
    */
   async import(
     label,
@@ -153,6 +177,11 @@ class NameManager {
    * @summary Returns a list of IPNS name(s)
    * @param {string} [label] - Optional string parameter representing the label of the name to list.
    * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
+   * @example
+   * // List IPNS name with label of `list-name-example`
+   * await nameManager.list(`list-name-example`);
+   * // List all IPNS names
+   * await nameManager.list();
    */
   async list(label = null) {
     const getResponse = await this.#client.request({
@@ -169,6 +198,9 @@ class NameManager {
    * @summary Deletes an IPNS name with the given label.
    * @param {string} label - The label of the IPNS name to delete.
    * @returns {Promise<boolean>} - A promise that resolves to true if the IPNS name was successfully deleted.
+   * @example
+   * // List IPNS name with label of `delete-name-example`
+   * await nameManager.delete(`delete-name-example`);
    */
   async delete(label) {
     const createResponse = await this.#client.request({
@@ -183,6 +215,10 @@ class NameManager {
    * @param {string} label - The label of the IPNS name to toggle.
    * @param {boolean} enabled - The new enabled state.
    * @returns {Promise<boolean>} A promise that resolves to true if the IPNS name was successfully toggled.
+   * @example
+   * // Toggle IPNS name with label of `toggle-name-example`
+   * await nameManager.toggle(`toggle-name-example`, true);  // Enabled
+   * await nameManager.toggle(`toggle-name-example`, false); // Disabled
    */
   async toggle(label, enabled) {
     const enableResponse = await this.#client.request({

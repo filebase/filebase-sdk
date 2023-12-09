@@ -32,7 +32,7 @@ The snippet below shows how to create a new bucket with `BucketManager`, upload 
 with `ObjectManager`, publish the object to IPNS with `NameManager`, delete the object with `ObjectManager` and finally
 delete the bucket with `BucketManager`.
 
-To use the library in your project, use npm or yarn to install the [`filebase-sdk`](https://www.npmjs.com/package/filebase-sdk) module.
+To use the library in your project, use npm or yarn to install the [`@filebase/sdk`](https://www.npmjs.com/package/@filebase/sdk) module.
 
 **node.js**
 ````js
@@ -95,17 +95,6 @@ await nameManager.delete(`myFirstIpnsKey`);
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk
-
-### Building filebase-sdk
-
-Want to help us improve filebase-sdk? This project uses node v20 and npm v9
-
-Install the deps with `npm`
-
-```console
-# install deps
-npm install
-```
 
 ### Testing
 

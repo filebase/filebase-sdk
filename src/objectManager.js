@@ -33,18 +33,29 @@ class ObjectManager {
 
   /**
    * @summary Creates a new instance of the class.
-   * @param {object} clientConfig - The configuration object for the S3 client.
+   * @param {object} clientConfiguration - The configuration object for the S3 client.
    * @param {string} defaultBucket - The default S3 bucket to be used.
    * @param {objectManagerOptions} options - Optional settings for the constructor.
+   * @example
+   * import { ObjectManager } from "@filebase/sdk";
+   * const objectManager = new ObjectManager({
+   *   credentials: {
+   *       accessKeyId: "KEY_FROM_DASHBOARD",
+   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
+   *   },
+   *   endpoint: "https://s3.filebase.com"
+   * }, "my-default-bucket", {
+   *   maxConcurrentUploads: 4
+   * });
    */
   constructor(
-    clientConfig,
+    clientConfiguration,
     defaultBucket,
     options = {
       maxConcurrentUploads: 4,
     },
   ) {
-    this.#client = new S3Client(clientConfig);
+    this.#client = new S3Client(clientConfiguration);
     this.#defaultBucket = defaultBucket;
 
     if (options?.maxConcurrentUploads) {
@@ -53,15 +64,15 @@ class ObjectManager {
   }
 
   /**
-   * @typedef {Object} entryImportResult
+   * @typedef {Object} object
    * @property {string} cid The CID of the uploaded object
-   * @property {string} path The path of the object
+   * @property {array<objectEntry>} [entries] If a directory then returns an array of the containing objects
    */
 
   /**
-   * @typedef {Object} object
+   * @typedef {Object} objectEntry
    * @property {string} cid The CID of the uploaded object
-   * @property {array<entryImportResult>} [entries] If a directory then returns an array of the containing objects
+   * @property {string} path The path of the object
    */
 
   /**
@@ -74,8 +85,26 @@ class ObjectManager {
    * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
    *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
    *    and a 'content' property specifying the content of the file.
-   * @param {string} [bucket=this.#defaultBucket] - The bucket name. Default is the value of the defaultBucket property.
+   * @param {string} [bucket] - The bucket name. Default is the value of the defaultBucket property.
    * @returns {Promise<object>}
+   * @example
+   * // Upload Object
+   * await objectManager.upload("my-object", Buffer.from("Hello World!"));
+   * // Upload Directory
+   * await objectManager.upload("my-first-directory", [
+   *  {
+   *   path: "/testObjects/1.txt",
+   *   content: Buffer.from("upload test object", "utf-8"),
+   *  },
+   *  {
+   *   path: "/testObjects/deep/1.txt",
+   *   content: Buffer.from("upload deep test object", "utf-8"),
+   *  },
+   *  {
+   *   path: "/topLevel.txt",
+   *   content: Buffer.from("upload top level test object", "utf-8"),
+   *  },
+   * ]);
    */
   async upload(key, source, bucket = this.#defaultBucket) {
     // Setup Upload Options
@@ -172,6 +201,9 @@ class ObjectManager {
    * @param {string} key - The key of the object to be downloaded.
    * @param {string} [bucket] - The name of the bucket to download from. If not provided, the default bucket will be used.
    * @returns {Promise<Object>} - A promise that resolves with the contents of the downloaded object as a Stream.
+   * @example
+   * // Download object with name of `download-object-example`
+   * await objectManager.download(`download-object-example`);
    */
   async download(key, bucket = this.#defaultBucket) {
     const command = new GetObjectCommand({
@@ -196,6 +228,11 @@ class ObjectManager {
    *
    * @param {listObjectOptions} options - The options for listing objects.
    * @returns {Promise<Array>} - A promise that resolves to an array of objects.
+   * @example
+   * // List objects in bucket with a limit of 1000
+   * await objectManager.list({
+   *   MaxKeys: 1000
+   * });
    */
   async list(
     options = {
@@ -240,6 +277,9 @@ class ObjectManager {
    * @param {string} key - The key of the object to be deleted.
    * @param {string} [bucket] - The name of the bucket that contains the object. Defaults to the default bucket.
    * @returns {Promise<Boolean>} - A Promise that resolves with the result of the delete operation.
+   * @example
+   * // Delete object with name of `delete-object-example`
+   * await objectManager.delete(`delete-object-example`);
    */
   async delete(key, bucket = this.#defaultBucket) {
     const command = new DeleteObjectCommand({

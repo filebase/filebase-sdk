@@ -14,10 +14,20 @@
     "recurse": true,
     "destination": "./documentation/",
     "readme": "./readme.md",
-    "sort": false,
     "theme_opts": {
       "title": "Filebase SDK",
-      "homepageTitle": "Filebase SDK"
+      "homepageTitle": "Filebase SDK",
+      "default_theme": "fallback-dark",
+      "sort": false,
+      "menu": [{
+        "title": "Github",
+        "link": "https://github.com/filebase/filebase-sdk",
+        "target": "_blank"
+      },{
+        "title": "npm",
+        "link": "https://www.npmjs.com/package/@filebase/sdk",
+        "target": "_blank"
+      }]
     }
   }
 }
