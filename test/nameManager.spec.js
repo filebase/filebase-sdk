@@ -86,7 +86,7 @@ test("toggle name", async () => {
     throw new Error(`Incorrect State on Resolved Name`);
   }
   await nameManager.toggle(testNameLabel, true);
-  const updatedName = await nameManager.list(testNameLabel);
+  const updatedName = await nameManager.resolve(testNameLabel);
   await nameManager.delete(testNameLabel);
   assert.strictEqual(updatedName.label, testNameLabel);
   assert.strictEqual(updatedName.cid, TEST_CID);
