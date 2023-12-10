@@ -52,11 +52,11 @@ test("update name", async () => {
   assert.strictEqual(updatedName, true);
 });
 
-test("list name", async () => {
+test("resolve name", async () => {
   const testNameLabel = `${TEST_PREFIX}-resolve-name-test-pass`,
     nameManager = new NameManager(S3_CONFIG),
     createdName = await nameManager.create(testNameLabel, TEST_CID),
-    resolvedName = await nameManager.list(createdName.label);
+    resolvedName = await nameManager.resolve(createdName.label);
   await nameManager.delete(testNameLabel);
   assert.strictEqual(resolvedName.label, testNameLabel);
   assert.strictEqual(resolvedName.cid, TEST_CID);

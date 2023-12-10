@@ -173,24 +173,36 @@ class NameManager {
   }
 
   /**
-   * @summary Returns a list of IPNS name(s)
-   * @param {string} [label] - Optional string parameter representing the label of the name to list.
-   * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
+   * @summary Returns the value of an IPNS name
+   * @param {string} label - Parameter representing the label of the name to resolve.
+   * @returns {Promise<Array.<name>>} - A promise that resolves to the value of a name.
    * @example
-   * // List IPNS name with label of `list-name-example`
-   * await nameManager.list(`list-name-example`);
-   * // List all IPNS names
-   * await nameManager.list();
+   * // Resolve IPNS name with label of `list-name-example`
+   * await nameManager.resolve(`list-name-example`);
    */
-  async list(label = null) {
+  async resolve(label) {
     const getResponse = await this.#client.request({
       method: "GET",
-      url: typeof label === "string" ? `/${label}` : undefined,
+      url: `/${label}`,
       validateStatus: (status) => {
         return status === 200 || status === 404;
       },
     });
     return getResponse.status === 200 ? getResponse.data : false;
+  }
+
+  /**
+   * @summary Returns a list of IPNS names
+   * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
+   * @example
+   * // List all IPNS names
+   * await nameManager.list();
+   */
+  async list() {
+    const getResponse = await this.#client.request({
+      method: "GET",
+    });
+    return getResponse.data;
   }
 
   /**
