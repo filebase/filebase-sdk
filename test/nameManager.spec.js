@@ -18,7 +18,7 @@ test("delete name", async () => {
     nameManager = new NameManager(S3_CONFIG);
   await nameManager.create(testNameLabel, TEST_CID);
   await nameManager.delete(testNameLabel);
-  const deletedName = await nameManager.list(testNameLabel);
+  const deletedName = await nameManager.resolve(testNameLabel);
   assert.strictEqual(deletedName, false);
 });
 test("create name", async () => {
