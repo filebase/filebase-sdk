@@ -18,7 +18,7 @@ test("delete name", async () => {
     nameManager = new NameManager(S3_CONFIG);
   await nameManager.create(testNameLabel, TEST_CID);
   await nameManager.delete(testNameLabel);
-  const deletedName = await nameManager.resolve(testNameLabel);
+  const deletedName = await nameManager.get(testNameLabel);
   assert.strictEqual(deletedName, false);
 });
 test("create name", async () => {
@@ -52,14 +52,14 @@ test("update name", async () => {
   assert.strictEqual(updatedName, true);
 });
 
-test("resolve name", async () => {
-  const testNameLabel = `${TEST_PREFIX}-resolve-name-test-pass`,
+test("get name", async () => {
+  const testNameLabel = `${TEST_PREFIX}-get-name-test-pass`,
     nameManager = new NameManager(S3_CONFIG),
     createdName = await nameManager.create(testNameLabel, TEST_CID),
-    resolvedName = await nameManager.resolve(createdName.label);
+    testName = await nameManager.get(createdName.label);
   await nameManager.delete(testNameLabel);
-  assert.strictEqual(resolvedName.label, testNameLabel);
-  assert.strictEqual(resolvedName.cid, TEST_CID);
+  assert.strictEqual(testName.label, testNameLabel);
+  assert.strictEqual(testName.cid, TEST_CID);
 });
 
 test("list names", async () => {
@@ -86,7 +86,7 @@ test("toggle name", async () => {
     throw new Error(`Incorrect State on Resolved Name`);
   }
   await nameManager.toggle(testNameLabel, true);
-  const updatedName = await nameManager.resolve(testNameLabel);
+  const updatedName = await nameManager.get(testNameLabel);
   await nameManager.delete(testNameLabel);
   assert.strictEqual(updatedName.label, testNameLabel);
   assert.strictEqual(updatedName.cid, TEST_CID);

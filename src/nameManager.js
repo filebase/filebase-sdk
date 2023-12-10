@@ -19,17 +19,10 @@ class NameManager {
    *   },
    * });
    */
-  constructor(
-    clientConfiguration = {
-      credentials: {
-        accessKeyId: null,
-        secretAccessKey: null,
-      },
-    },
-  ) {
+  constructor(clientConfiguration = {}) {
     clientConfiguration.endpoint =
       clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
-    const configErrors = this.#validateclientConfiguration(clientConfiguration);
+    const configErrors = this.#validateClientConfiguration(clientConfiguration);
     if (configErrors.length > 0) {
       throw new Error(configErrors.join("\n"));
     }
@@ -50,7 +43,7 @@ class NameManager {
    * @param {clientConfiguration} clientConfiguration - The client configuration object.
    * @returns {string[]} - An array containing any validation errors found in the client configuration.
    */
-  #validateclientConfiguration(clientConfiguration) {
+  #validateClientConfiguration(clientConfiguration) {
     let configErrors = [];
 
     if (typeof clientConfiguration?.credentials?.accessKeyId !== "string") {
@@ -158,29 +151,29 @@ class NameManager {
    * @returns {Promise<boolean>} - A Promise that resolves to true if the IPNS name was updated.
    */
   async update(label, cid, options = {}) {
-    const setOptions = {
+    const updateOptions = {
       cid,
     };
     if (options?.enabled) {
-      setOptions.enabled = Boolean(options.enabled);
+      updateOptions.enabled = Boolean(options.enabled);
     }
-    const setResponse = await this.#client.request({
+    const updateResponse = await this.#client.request({
       method: "PUT",
       url: `/${label}`,
-      data: setOptions,
+      data: updateOptions,
     });
-    return setResponse.status === 200;
+    return updateResponse.status === 200;
   }
 
   /**
    * @summary Returns the value of an IPNS name
    * @param {string} label - Parameter representing the label of the name to resolve.
-   * @returns {Promise<Array.<name>>} - A promise that resolves to the value of a name.
+   * @returns {Promise<name>} - A promise that resolves to the value of a name.
    * @example
-   * // Resolve IPNS name with label of `list-name-example`
-   * await nameManager.resolve(`list-name-example`);
+   * // Get IPNS name with label of `list-name-example`
+   * await nameManager.get(`list-name-example`);
    */
-  async resolve(label) {
+  async get(label) {
     const getResponse = await this.#client.request({
       method: "GET",
       url: `/${label}`,
@@ -199,10 +192,10 @@ class NameManager {
    * await nameManager.list();
    */
   async list() {
-    const getResponse = await this.#client.request({
+    const listResponse = await this.#client.request({
       method: "GET",
     });
-    return getResponse.data;
+    return listResponse.data;
   }
 
   /**
@@ -214,32 +207,32 @@ class NameManager {
    * await nameManager.delete(`delete-name-example`);
    */
   async delete(label) {
-    const createResponse = await this.#client.request({
+    const deleteResponse = await this.#client.request({
       method: "DELETE",
       url: `/${label}`,
     });
-    return createResponse.status === 202;
+    return deleteResponse.status === 202;
   }
 
   /**
    * @summary Toggles the enabled state of a given IPNS name.
    * @param {string} label - The label of the IPNS name to toggle.
-   * @param {boolean} enabled - The new enabled state.
+   * @param {boolean} targetState - The new target state.
    * @returns {Promise<boolean>} A promise that resolves to true if the IPNS name was successfully toggled.
    * @example
    * // Toggle IPNS name with label of `toggle-name-example`
    * await nameManager.toggle(`toggle-name-example`, true);  // Enabled
    * await nameManager.toggle(`toggle-name-example`, false); // Disabled
    */
-  async toggle(label, enabled) {
-    const enableResponse = await this.#client.request({
+  async toggle(label, targetState) {
+    const toggleResponse = await this.#client.request({
       method: "PUT",
       url: `/${label}`,
       data: {
-        enabled: enabled,
+        enabled: targetState,
       },
     });
-    return enableResponse.status === 200;
+    return toggleResponse.status === 200;
   }
 }
 

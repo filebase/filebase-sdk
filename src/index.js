@@ -1,10 +1,12 @@
 import BucketManager from "./bucketManager.js";
 import ObjectManager from "./objectManager.js";
+import GatewayManager from "./gatewayManager.js";
 import NameManager from "./nameManager.js";
 
 /**
  * @typedef {Object} clientConfiguration
  * @property {clientConfigurationCredentials} credentials The credentials object for authentication.
+ * @property {string} [endpoint] The endpoint for the API
  */
 
 /**
@@ -13,4 +15,4 @@ import NameManager from "./nameManager.js";
  * @property {string} secretAccessKey The secret access key for authentication.
  */
 
-export { BucketManager, ObjectManager, NameManager };
+export { BucketManager, ObjectManager, GatewayManager, NameManager };
