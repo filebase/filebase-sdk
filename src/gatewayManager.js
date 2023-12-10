@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export default class GatewayManager {
+class GatewayManager {
   #DEFAULT_ENDPOINT = "https://api.filebase.io";
   #DEFAULT_TIMEOUT = 60000;
 
@@ -10,8 +10,8 @@ export default class GatewayManager {
    * @summary Creates a new instance of the constructor.
    * @param {clientConfiguration} clientConfiguration - The configuration object for the client.
    * @example
-   * import { NameManager } from "@filebase/sdk";
-   * const nameManager = new NameManager({
+   * import { GatewayManager } from "@filebase/sdk";
+   * const gatewayManager = new GatewayManager({
    *   credentials: {
    *       accessKeyId: "KEY_FROM_DASHBOARD",
    *       secretAccessKey: "SECRET_FROM_DASHBOARD",
@@ -201,3 +201,5 @@ export default class GatewayManager {
     return toggleResponse.status === 200;
   }
 }
+
+export default GatewayManager;
