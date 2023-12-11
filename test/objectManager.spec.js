@@ -7,19 +7,14 @@ import { writeFile } from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import os from "node:os";
 
-const TEST_PREFIX = Date.now(),
-  S3_CONFIG = {
-    endpoint: process.env.TEST_S3_ENDPOINT,
-    credentials: {
-      accessKeyId: process.env.TEST_S3_KEY,
-      secretAccessKey: process.env.TEST_S3_SECRET,
-    },
-    region: process.env.TEST_S3_REGION,
-  };
+const TEST_PREFIX = Date.now();
 
 async function createBucket(name) {
   // Initialize BucketManager
-  const bucketManager = new BucketManager(S3_CONFIG);
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+  );
 
   // Create bucket with name
   const bucketNameToCreate = name;
@@ -36,7 +31,11 @@ async function createBucket(name) {
 
 async function uploadObject(bucket, key, body) {
   // Initialize ObjectManager
-  const objectManager = new ObjectManager(S3_CONFIG, bucket);
+  const objectManager = new ObjectManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+    { bucket },
+  );
 
   // Upload Object
   await objectManager.upload(key, body);
@@ -53,7 +52,11 @@ async function uploadObject(bucket, key, body) {
 
 async function deleteObject(bucket, key) {
   // Initialize ObjectManager
-  const objectManager = new ObjectManager(S3_CONFIG, bucket);
+  const objectManager = new ObjectManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+    { bucket },
+  );
 
   // Delete Object
   await objectManager.delete(key);
@@ -62,7 +65,10 @@ async function deleteObject(bucket, key) {
 
 async function deleteBucket(bucket) {
   // Initialize BucketManager
-  const bucketManager = new BucketManager(S3_CONFIG);
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+  );
 
   // Delete Bucket
   await bucketManager.delete(bucket);
@@ -86,7 +92,11 @@ test("delete object", async () => {
   }
 
   // Initialize ObjectManager
-  const objectManager = new ObjectManager(S3_CONFIG, deleteTestBucket);
+  const objectManager = new ObjectManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+    { bucket: deleteTestBucket },
+  );
 
   // Delete object `delete-object-test`
   await objectManager.delete(objectNameToCreate);
@@ -164,7 +174,11 @@ test("download object", async () => {
   }
 
   // Download object `download-object-test` and assert it completes
-  const objectManager = new ObjectManager(S3_CONFIG, downloadTestBucket);
+  const objectManager = new ObjectManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+    { bucket: downloadTestBucket },
+  );
   const downloadStream = await objectManager.download(objectNameToCreate),
     downloadFilename = uuidv4(),
     downloadPath = Path.resolve(os.tmpdir(), downloadFilename),
@@ -191,7 +205,11 @@ test("list objects", async () => {
     createdObjectCount++;
   }
 
-  const objectManager = new ObjectManager(S3_CONFIG, listTestBucket);
+  const objectManager = new ObjectManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+    { bucket: listTestBucket },
+  );
 
   const bucketList = await objectManager.list({
     MaxKeys: 50,

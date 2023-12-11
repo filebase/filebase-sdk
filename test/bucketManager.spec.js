@@ -2,19 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import BucketManager from "../src/bucketManager.js";
 
-const TEST_PREFIX = Date.now(),
-  S3_CONFIG = {
-    endpoint: process.env.TEST_S3_ENDPOINT,
-    credentials: {
-      accessKeyId: process.env.TEST_S3_KEY,
-      secretAccessKey: process.env.TEST_S3_SECRET,
-    },
-    region: process.env.TEST_S3_REGION,
-  };
+const TEST_PREFIX = Date.now();
 
 test("create bucket", async (t) => {
   // Initialize BucketManager
-  const bucketManager = new BucketManager(S3_CONFIG);
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+  );
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-create-bucket-test-pass`;
@@ -35,7 +30,10 @@ test("create bucket", async (t) => {
 
 test("delete bucket", async (t) => {
   // Initialize BucketManager
-  const bucketManager = new BucketManager(S3_CONFIG);
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY,
+    process.env.TEST_S3_SECRET,
+  );
 
   // Create bucket `delete-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-delete-bucket-test-pass`;

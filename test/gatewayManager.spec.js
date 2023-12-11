@@ -2,18 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import GatewayManager from "../src/gatewayManager.js";
 
-const TEST_PREFIX = Date.now(),
-  S3_CONFIG = {
-    endpoint: process.env.TEST_GW_ENDPOINT,
-    credentials: {
-      accessKeyId: process.env.TEST_GW_KEY,
-      secretAccessKey: process.env.TEST_GW_SECRET,
-    },
-  };
+const TEST_PREFIX = Date.now();
 
 test("delete gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-delete-gateway-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG);
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY,
+      process.env.TEST_GW_SECRET,
+    );
   await gatewayManager.create(testGatewayName);
   await gatewayManager.delete(testGatewayName);
   const deletedName = await gatewayManager.get(testGatewayName);
@@ -21,7 +17,10 @@ test("delete gateway", async () => {
 });
 test("create gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-create-gateway-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG),
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY,
+      process.env.TEST_GW_SECRET,
+    ),
     createdName = await gatewayManager.create(testGatewayName);
   await gatewayManager.delete(testGatewayName);
   assert.strictEqual(createdName.name, testGatewayName);
@@ -29,7 +28,10 @@ test("create gateway", async () => {
 
 test("update gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-update-gateway-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG),
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY,
+      process.env.TEST_GW_SECRET,
+    ),
     createdName = await gatewayManager.create(testGatewayName),
     updatedName = await gatewayManager.update(createdName.name, {
       private: true,
@@ -41,7 +43,10 @@ test("update gateway", async () => {
 
 test("get gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-get-gateway-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG),
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY,
+      process.env.TEST_GW_SECRET,
+    ),
     createdName = await gatewayManager.create(testGatewayName, {}),
     testName = await gatewayManager.get(createdName.name);
   await gatewayManager.delete(testGatewayName);
@@ -50,7 +55,10 @@ test("get gateway", async () => {
 
 test("list gateways", async () => {
   const testGatewayName = `${TEST_PREFIX}-list-names-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG);
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY,
+      process.env.TEST_GW_SECRET,
+    );
   const initialGatewaysList = await gatewayManager.list();
   for (let i = 0; i < 10; i++) {
     await gatewayManager.create(`${testGatewayName}-${i}`);
@@ -64,7 +72,7 @@ test("list gateways", async () => {
 
 /*test("toggle gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-toggle-gateway-test-pass`,
-    gatewayManager = new GatewayManager(S3_CONFIG);
+    gatewayManager = new GatewayManager(process.env.TEST_GW_KEY, process.env.TEST_GW_SECRET);
   await gatewayManager.create(testGatewayName, {
     enabled: false,
   });

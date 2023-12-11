@@ -23,47 +23,48 @@ import { v4 as uuidv4 } from "uuid";
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
   #DEFAULT_ENDPOINT = "https://s3.filebase.com";
+  #DEFAULT_REGION = "us-east-1";
+  #DEFAULT_MAX_CONCURRENT_UPLOADS = 4;
+
   #client;
   #defaultBucket;
-  #maxConcurrentUploads = 4;
+  #maxConcurrentUploads;
 
   /**
    * @typedef {Object} objectManagerOptions Optional settings for the constructor.
-   * @property {number} maxConcurrentUploads The maximum number of concurrent uploads.
+   * @property {string} [bucket] Default bucket to use.
+   * @property {number} [maxConcurrentUploads] The maximum number of concurrent uploads.
    */
 
   /**
-   * @summary Creates a new instance of the class.
-   * @param {object} clientConfiguration - The configuration object for the S3 client.
-   * @param {string} defaultBucket - The default S3 bucket to be used.
+   * @summary Creates a new instance of the constructor.
+   * @param {string} clientKey - The access key ID for authentication.
+   * @param {string} clientSecret - The secret access key for authentication.
    * @param {objectManagerOptions} options - Optional settings for the constructor.
    * @example
    * import { ObjectManager } from "@filebase/sdk";
-   * const objectManager = new ObjectManager({
-   *   credentials: {
-   *       accessKeyId: "KEY_FROM_DASHBOARD",
-   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
-   *   },
-   * }, "my-default-bucket", {
+   * const objectManager = new ObjectManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD", {
+   *   bucket: "my-default-bucket",
    *   maxConcurrentUploads: 4
    * });
    */
-  constructor(
-    clientConfiguration,
-    defaultBucket,
-    options = {
-      maxConcurrentUploads: 4,
-    },
-  ) {
-    clientConfiguration.endpoint =
-      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
-    clientConfiguration.region = clientConfiguration.region || "us-east-1";
+  constructor(clientKey, clientSecret, options) {
+    const clientEndpoint =
+        process.env.NODE_ENV === "test"
+          ? process.env.TEST_S3_ENDPOINT || this.#DEFAULT_ENDPOINT
+          : this.#DEFAULT_ENDPOINT,
+      clientConfiguration = {
+        credentials: {
+          accessKeyId: clientKey,
+          secretAccessKey: clientSecret,
+        },
+        endpoint: clientEndpoint,
+        region: this.#DEFAULT_REGION,
+      };
+    this.#defaultBucket = options?.bucket;
+    this.#maxConcurrentUploads =
+      options?.maxConcurrentUploads || this.#DEFAULT_MAX_CONCURRENT_UPLOADS;
     this.#client = new S3Client(clientConfiguration);
-    this.#defaultBucket = defaultBucket;
-
-    if (options?.maxConcurrentUploads) {
-      this.#maxConcurrentUploads = Number(options.maxConcurrentUploads);
-    }
   }
 
   /**

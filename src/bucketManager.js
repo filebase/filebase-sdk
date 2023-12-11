@@ -8,24 +8,31 @@ import {
 /** Provides methods for managing buckets in an S3 endpoint. */
 class BucketManager {
   #DEFAULT_ENDPOINT = "https://s3.filebase.com";
+  #DEFAULT_REGION = "us-east-1";
+
   #client;
 
   /**
-   * @summary Creates a new instance of the S3Client class.
-   * @param {clientConfiguration} clientConfiguration - The configuration object for the S3Client.
+   * @summary Creates a new instance of the constructor.
+   * @param {string} clientKey - The access key ID for authentication.
+   * @param {string} clientSecret - The secret access key for authentication.
    * @example
    * import { BucketManager } from "@filebase/sdk";
-   * const bucketManager = new BucketManager({
-   *   credentials: {
-   *       accessKeyId: "KEY_FROM_DASHBOARD",
-   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
-   *   },
-   * });
+   * const bucketManager = new BucketManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");
    */
-  constructor(clientConfiguration) {
-    clientConfiguration.endpoint =
-      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
-    clientConfiguration.region = clientConfiguration.region || "us-east-1";
+  constructor(clientKey, clientSecret) {
+    const clientEndpoint =
+        process.env.NODE_ENV === "test"
+          ? process.env.TEST_S3_ENDPOINT || this.#DEFAULT_ENDPOINT
+          : this.#DEFAULT_ENDPOINT,
+      clientConfiguration = {
+        credentials: {
+          accessKeyId: clientKey,
+          secretAccessKey: clientSecret,
+        },
+        endpoint: clientEndpoint,
+        region: this.#DEFAULT_REGION,
+      };
     this.#client = new S3Client(clientConfiguration);
   }
 

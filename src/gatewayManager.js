@@ -8,56 +8,26 @@ class GatewayManager {
 
   /**
    * @summary Creates a new instance of the constructor.
-   * @param {clientConfiguration} clientConfiguration - The configuration object for the client.
+   * @param {string} clientKey - The access key ID for authentication.
+   * @param {string} clientSecret - The secret access key for authentication.
    * @example
    * import { GatewayManager } from "@filebase/sdk";
-   * const gatewayManager = new GatewayManager({
-   *   credentials: {
-   *       accessKeyId: "KEY_FROM_DASHBOARD",
-   *       secretAccessKey: "SECRET_FROM_DASHBOARD",
-   *   },
-   * });
+   * const gatewayManager = new GatewayManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");
    */
-  constructor(clientConfiguration) {
-    clientConfiguration.endpoint =
-      clientConfiguration.endpoint || this.#DEFAULT_ENDPOINT;
-    const configErrors = this.#validateClientConfiguration(clientConfiguration);
-    if (configErrors.length > 0) {
-      throw new Error(configErrors.join("\n"));
-    }
-
-    const encodedToken = Buffer.from(
-        `${clientConfiguration.credentials.accessKeyId}:${clientConfiguration.credentials.secretAccessKey}`,
-      ).toString("base64"),
-      baseURL = `${clientConfiguration.endpoint}/v1/gateways`;
+  constructor(clientKey, clientSecret) {
+    const clientEndpoint =
+        process.env.NODE_ENV === "test"
+          ? process.env.TEST_GW_ENDPOINT || this.#DEFAULT_ENDPOINT
+          : this.#DEFAULT_ENDPOINT,
+      encodedToken = Buffer.from(`${clientKey}:${clientSecret}`).toString(
+        "base64",
+      ),
+      baseURL = `${clientEndpoint}/v1/gateways`;
     this.#client = axios.create({
       baseURL: baseURL,
       timeout: this.#DEFAULT_TIMEOUT,
       headers: { Authorization: `Bearer ${encodedToken}` },
     });
-  }
-
-  /**
-   * @summary Validates the client configuration.
-   * @param {clientConfiguration} clientConfiguration - The client configuration object.
-   * @returns {string[]} - An array containing any validation errors found in the client configuration.
-   */
-  #validateClientConfiguration(clientConfiguration) {
-    let configErrors = [];
-
-    if (typeof clientConfiguration?.credentials?.accessKeyId !== "string") {
-      configErrors.push(
-        "clientConfiguration must contain credentials.accessKeyId",
-      );
-    }
-
-    if (typeof clientConfiguration?.credentials?.secretAccessKey !== "string") {
-      configErrors.push(
-        "clientConfiguration must contain credentials.secretAccessKey",
-      );
-    }
-
-    return configErrors;
   }
 
   /**
