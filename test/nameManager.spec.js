@@ -2,15 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import NameManager from "../src/nameManager.js";
 
-const TEST_CID = process.env.TEST_IPNS_CID,
-  TEST_PRIVATE_KEY = process.env.TEST_IPNS_PRIVATE_KEY,
+const TEST_CID = process.env.TEST_NAME_CID,
+  TEST_PRIVATE_KEY = process.env.TEST_NAME_PRIVATE_KEY,
   TEST_PREFIX = Date.now();
 
 test("delete name", async () => {
   const testNameLabel = `${TEST_PREFIX}-delete-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     );
   await nameManager.create(testNameLabel, TEST_CID);
   await nameManager.delete(testNameLabel);
@@ -20,8 +20,8 @@ test("delete name", async () => {
 test("create name", async () => {
   const testNameLabel = `${TEST_PREFIX}-create-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await nameManager.create(testNameLabel, TEST_CID);
   await nameManager.delete(testNameLabel);
@@ -32,8 +32,8 @@ test("create name", async () => {
 test("import name", async () => {
   const testNameLabel = `${TEST_PREFIX}-import-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
     importedName = await nameManager.import(
       testNameLabel,
@@ -48,8 +48,8 @@ test("import name", async () => {
 test("update name", async () => {
   const testNameLabel = `${TEST_PREFIX}-update-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await nameManager.create(testNameLabel, TEST_CID),
     updatedName = await nameManager.update(createdName.label, TEST_CID);
@@ -60,8 +60,8 @@ test("update name", async () => {
 test("get name", async () => {
   const testNameLabel = `${TEST_PREFIX}-get-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await nameManager.create(testNameLabel, TEST_CID),
     testName = await nameManager.get(createdName.label);
@@ -73,24 +73,26 @@ test("get name", async () => {
 test("list names", async () => {
   const testNameLabel = `${TEST_PREFIX}-list-names-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
-    );
-  for (let i = 0; i < 10; i++) {
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
+    ),
+    initialNamesList = await nameManager.list(),
+    countToCreate = 3;
+  for (let i = 0; i < countToCreate; i++) {
     await nameManager.create(`${testNameLabel}-${i}`, TEST_CID);
   }
   const namesList = await nameManager.list();
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < countToCreate; i++) {
     await nameManager.delete(`${testNameLabel}-${i}`);
   }
-  assert.strictEqual(namesList.length, 10);
+  assert.strictEqual(namesList.length, initialNamesList.length + countToCreate);
 });
 
-test("toggle name", async () => {
+test("toggle name on", async () => {
   const testNameLabel = `${TEST_PREFIX}-toggle-name-test-pass`,
     nameManager = new NameManager(
-      process.env.TEST_NAME_KEY,
-      process.env.TEST_NAME_SECRET,
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     );
   await nameManager.create(testNameLabel, TEST_CID, {
     enabled: false,
@@ -105,4 +107,23 @@ test("toggle name", async () => {
   assert.strictEqual(updatedName.label, testNameLabel);
   assert.strictEqual(updatedName.cid, TEST_CID);
   assert.strictEqual(updatedName.enabled, true);
+});
+
+test("toggle name off", async () => {
+  const testNameLabel = `${TEST_PREFIX}-toggle-name-test-pass`,
+    nameManager = new NameManager(
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
+    );
+  await nameManager.create(testNameLabel, TEST_CID);
+  const resolvedName = await nameManager.list(testNameLabel);
+  if (resolvedName?.enabled === false) {
+    throw new Error(`Incorrect State on Resolved Name`);
+  }
+  await nameManager.toggle(testNameLabel, false);
+  const updatedName = await nameManager.get(testNameLabel);
+  await nameManager.delete(testNameLabel);
+  assert.strictEqual(updatedName.label, testNameLabel);
+  assert.strictEqual(updatedName.cid, TEST_CID);
+  assert.strictEqual(updatedName.enabled, false);
 });

@@ -12,8 +12,8 @@ const TEST_PREFIX = Date.now();
 async function createBucket(name) {
   // Initialize BucketManager
   const bucketManager = new BucketManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
   );
 
   // Create bucket with name
@@ -32,8 +32,8 @@ async function createBucket(name) {
 async function uploadObject(bucket, key, body) {
   // Initialize ObjectManager
   const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
     { bucket },
   );
 
@@ -53,8 +53,8 @@ async function uploadObject(bucket, key, body) {
 async function deleteObject(bucket, key) {
   // Initialize ObjectManager
   const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
     { bucket },
   );
 
@@ -66,8 +66,8 @@ async function deleteObject(bucket, key) {
 async function deleteBucket(bucket) {
   // Initialize BucketManager
   const bucketManager = new BucketManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
   );
 
   // Delete Bucket
@@ -93,8 +93,8 @@ test("delete object", async () => {
 
   // Initialize ObjectManager
   const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
     { bucket: deleteTestBucket },
   );
 
@@ -175,8 +175,8 @@ test("download object", async () => {
 
   // Download object `download-object-test` and assert it completes
   const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
     { bucket: downloadTestBucket },
   );
   const downloadStream = await objectManager.download(objectNameToCreate),
@@ -206,8 +206,8 @@ test("list objects", async () => {
   }
 
   const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY,
-    process.env.TEST_S3_SECRET,
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
     { bucket: listTestBucket },
   );
 

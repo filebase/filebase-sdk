@@ -1,7 +1,9 @@
 import {
   CreateBucketCommand,
   DeleteBucketCommand,
+  GetBucketAclCommand,
   ListBucketsCommand,
+  PutBucketAclCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 
@@ -87,6 +89,44 @@ class BucketManager {
 
     await this.#client.send(command);
     return true;
+  }
+
+  /**
+   * @summary Sets the privacy of a given bucket.
+   * @param {string} name - The name of the bucket to toggle.
+   * @param {boolean} targetState - The new target state. [true=private,false=public]
+   * @returns {Promise<boolean>} A promise that resolves to true if the bucket was successfully toggled.
+   * @example
+   * // Toggle bucket with label of `toggle-bucket-example`
+   * await bucketManager.toggle(`toggle-bucket-example`, true);  // Enabled
+   * await bucketManager.toggle(`toggle-bucket-example`, false); // Disabled
+   */
+
+  async setPrivacy(name, targetState) {
+    const command = new PutBucketAclCommand({
+      Bucket: name,
+      ACL: targetState ? "private" : "public-read",
+    });
+
+    await this.#client.send(command);
+    return true;
+  }
+
+  /**
+   * @summary Gets the privacy of a given bucket
+   * @param {string} name - The name of the bucket to query.
+   * @returns {Promise<boolean>} A promise that resolves to true if the bucket is private.
+   */
+  async getPrivacy(name) {
+    const command = new GetBucketAclCommand({
+      Bucket: name,
+    });
+
+    const response = await this.#client.send(command),
+      readPermission = response.Grants.find((grant) => {
+        return grant.Grantee.Type === "Group" && grant.Permission === "READ";
+      });
+    return !(typeof readPermission !== "undefined");
   }
 }
 

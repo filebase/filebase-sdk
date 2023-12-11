@@ -7,8 +7,8 @@ const TEST_PREFIX = Date.now();
 test("delete gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-delete-gateway-test-pass`,
     gatewayManager = new GatewayManager(
-      process.env.TEST_GW_KEY,
-      process.env.TEST_GW_SECRET,
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     );
   await gatewayManager.create(testGatewayName);
   await gatewayManager.delete(testGatewayName);
@@ -18,8 +18,8 @@ test("delete gateway", async () => {
 test("create gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-create-gateway-test-pass`,
     gatewayManager = new GatewayManager(
-      process.env.TEST_GW_KEY,
-      process.env.TEST_GW_SECRET,
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await gatewayManager.create(testGatewayName);
   await gatewayManager.delete(testGatewayName);
@@ -29,8 +29,8 @@ test("create gateway", async () => {
 test("update gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-update-gateway-test-pass`,
     gatewayManager = new GatewayManager(
-      process.env.TEST_GW_KEY,
-      process.env.TEST_GW_SECRET,
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await gatewayManager.create(testGatewayName),
     updatedName = await gatewayManager.update(createdName.name, {
@@ -44,8 +44,8 @@ test("update gateway", async () => {
 test("get gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-get-gateway-test-pass`,
     gatewayManager = new GatewayManager(
-      process.env.TEST_GW_KEY,
-      process.env.TEST_GW_SECRET,
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     ),
     createdName = await gatewayManager.create(testGatewayName, {}),
     testName = await gatewayManager.get(createdName.name);
@@ -56,23 +56,48 @@ test("get gateway", async () => {
 test("list gateways", async () => {
   const testGatewayName = `${TEST_PREFIX}-list-names-test-pass`,
     gatewayManager = new GatewayManager(
-      process.env.TEST_GW_KEY,
-      process.env.TEST_GW_SECRET,
-    );
-  const initialGatewaysList = await gatewayManager.list();
-  for (let i = 0; i < 10; i++) {
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
+    ),
+    initialGatewaysList = await gatewayManager.list(),
+    countToCreate = 3;
+  for (let i = 0; i < countToCreate; i++) {
     await gatewayManager.create(`${testGatewayName}-${i}`);
   }
   const gatewaysList = await gatewayManager.list();
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < countToCreate; i++) {
     await gatewayManager.delete(`${testGatewayName}-${i}`);
   }
-  assert.strictEqual(gatewaysList.length, initialGatewaysList.length + 10);
+  assert.strictEqual(
+    gatewaysList.length,
+    initialGatewaysList.length + countToCreate,
+  );
 });
 
-/*test("toggle gateway", async () => {
+test("toggle gateway off", async () => {
   const testGatewayName = `${TEST_PREFIX}-toggle-gateway-test-pass`,
-    gatewayManager = new GatewayManager(process.env.TEST_GW_KEY, process.env.TEST_GW_SECRET);
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
+    );
+  await gatewayManager.create(testGatewayName);
+  const resolvedName = await gatewayManager.get(testGatewayName);
+  if (resolvedName?.enabled === false) {
+    throw new Error(`Incorrect State on Resolved Name`);
+  }
+  await gatewayManager.toggle(testGatewayName, false);
+  const updatedName = await gatewayManager.get(testGatewayName);
+  await gatewayManager.delete(testGatewayName);
+  assert.strictEqual(updatedName.name, testGatewayName);
+  assert.strictEqual(updatedName.enabled, false);
+});
+
+test("toggle gateway on", async () => {
+  const testGatewayName = `${TEST_PREFIX}-toggle-gateway-test-pass`,
+    gatewayManager = new GatewayManager(
+      process.env.TEST_GW_KEY || process.env.TEST_KEY,
+      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
+    );
   await gatewayManager.create(testGatewayName, {
     enabled: false,
   });
@@ -85,4 +110,4 @@ test("list gateways", async () => {
   await gatewayManager.delete(testGatewayName);
   assert.strictEqual(updatedName.name, testGatewayName);
   assert.strictEqual(updatedName.enabled, true);
-});*/
+});
