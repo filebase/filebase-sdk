@@ -249,11 +249,11 @@ test("copy object", async () => {
   const objectManager = new ObjectManager(
     process.env.TEST_S3_KEY || process.env.TEST_KEY,
     process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    { bucket: bucketDest },
+    { bucket: bucketSrc },
   );
 
   // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
-  await objectManager.copy(objectNameToCreateSrc, bucketSrc);
+  await objectManager.copy(objectNameToCreateSrc, bucketDest);
 
   // List bucket and assert new object exists
   const existingObjects = await objectManager.list({

@@ -54,14 +54,18 @@ console.dir(bucketsList);
 // Initialize ObjectManager
 const objectManager = new ObjectManager(s3Config, bucketName);
 // Upload Object
-const objectName = `new-object`;
-const uploadedObject = await objectManager.upload(objectName, body);
+const objectName = `new-object`,
+  uploadedObject = await objectManager.upload(objectName, Buffer.from("Hello Filebase!"));
 // Confirm Object Uploaded
 const objectsList = await objectManager.list({
     Prefix: key,
     MaxKeys: 1,
   });
 console.dir(objectsList)
+// Copy Object to a New Bucket
+const bucketCopyDestinationName = `copy-dest-bucket`
+await bucketManager.create(bucketCopyDestinationName);
+await objectManager.copy(`new-object`, bucketCopyDestinationName);
 
 // Initialize NameManager
 const nameManager = new NameManager(s3Config);
