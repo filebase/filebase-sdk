@@ -1,5 +1,6 @@
 // S3 Imports
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -293,6 +294,38 @@ class ObjectManager {
 
     await this.#client.send(command);
     return true;
+  }
+
+  /**
+   * If the destinationKey is not provided, the object will be copied with the same key as the sourceKey.
+   *
+   * @summary Copy the object from sourceKey in the sourceBucket to destinationKey in the destinationBucket.
+   * @param {string} sourceKey - The key of the object to be copied from the sourceBucket.
+   * @param {string} destinationBucket - The bucket where the object will be copied to.
+   * @param {object} [options] - Additional options for the copy operation.
+   * @param {string} [options.sourceBucket] - The source bucket from where the object is to be copied.
+   * @param {string} [options.destinationKey] - The key of the object in the destination bucket. By default, it is the same as the sourceKey.
+   *
+   * @returns {Promise<*>} - A Promise that resolves with the response of the copy operation.
+   */
+  async copy(
+    sourceKey,
+    destinationBucket,
+    options = {
+      sourceBucket: this.#defaultBucket,
+      destinationKey: undefined,
+    },
+  ) {
+    const copySource = `${
+        options?.sourceBucket || this.#defaultBucket
+      }/${sourceKey}`,
+      command = new CopyObjectCommand({
+        CopySource: copySource,
+        Bucket: destinationBucket,
+        Key: options?.destinationKey || sourceKey,
+      });
+
+    return await this.#client.send(command);
   }
 }
 
