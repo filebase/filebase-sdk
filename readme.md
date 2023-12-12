@@ -43,16 +43,18 @@ import {BucketManager, ObjectManager, NameManager} from 'filebase-sdk'
 const s3Config = {};
 
 // Initialize BucketManager
-const bucketManager = new BucketManager(s3Config);
+const bucketManager = new BucketManager(S3_KEY, S3_SECRET);
 // Create bucket
 const bucketName = `create-bucket-[random string]`;
 await bucketManager.create(bucketName);
 // List buckets
 const bucketsList = await bucketManager.list();
+// Toggle bucket privacy off
+await bucketManager.toggle(bucketName, false);
 console.dir(bucketsList);
 
 // Initialize ObjectManager
-const objectManager = new ObjectManager(s3Config, bucketName);
+const objectManager = new ObjectManager(S3_KEY, S3_SECRET, bucketName);
 // Upload Object
 const objectName = `new-object`;
 const uploadedObject = await objectManager.upload(objectName, body);
@@ -64,25 +66,42 @@ const objectsList = await objectManager.list({
 console.dir(objectsList)
 
 // Initialize NameManager
-const nameManager = new NameManager(s3Config);
+const nameManager = new NameManager(S3_KEY, S3_SECRET);
 // Create New IPNS Name with Broadcast Disabled
 const ipnsName = await nameManager.create(`myFirstIpnsKey`, uploadedObject.cid, {
   enabled: true
 });
 // Update IPNS Value and Optionally Enable the Broadcast
-await nameManager.set(`myFirstIpnsKey`, uploadedObject.cid, {
+const ipnsLabel = `myFirstIpnsKey`;
+await nameManager.set(ipnsLabel, uploadedObject.cid, {
   enabled: true,
 });
 // Enable IPNS Broadcast without updating the IPNS Record
-await nameManager.toggle(`myFirstIpnsKey`, true);
+await nameManager.toggle(ipnsLabel, true);
 // List IPNS Names
 const myIpnsNames = await nameManager.list();
 // List Specific IPNS Name
-const myIpnsName = await nameManager.list(`myFirstIpnsKey`);
+const myIpnsName = await nameManager.list(ipnsLabel);
 // Import IPNS Name
-const myImportedIpnsName = await nameManager.import(`myImportedKey`, uploadedObject.cid, Base64EncodedPrivateKey, {
+const myImportedIpnsName = await nameManager.import(ipnsLabel, uploadedObject.cid, Base64EncodedPrivateKey, {
   enabled: false,
-})
+});
+
+// Initialize GatewayManager
+const gatewayManager = new GatewayManager(S3_KEY, S3_SECRET);
+// Create New Gateway
+const gatewayName = "myRandomGatewayName";
+const myGateway = await gatewayManager.create(gatewayName);
+// Get Gateway Setup
+const gatewayConfig = await gatewayManager.get(gatewayName);
+// List IPFS Gateways
+const myGateways = await gatewayManager.list();
+// Update Gateway
+const myUpdatedGateway = await gatewayManager.update(gatewayName, {
+  enabled: false
+});
+// Toggle Gateway State
+await gatewayManager.toggle(gatewayName, true)
 
 // Delete Object
 await objectManager.delete(objectName);
@@ -91,7 +110,10 @@ await objectManager.delete(objectName);
 await bucketManager.delete(bucketName);
 
 // Delete Name
-await nameManager.delete(`myFirstIpnsKey`);
+await nameManager.delete(ipnsLabel);
+
+// Delete Gateway
+await gatewayManager.delete(gatewayName);
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk

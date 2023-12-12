@@ -45,7 +45,7 @@ class NameManager {
 
   /**
    * @typedef {Object} nameOptions
-   * @property {boolean} enabled Whether the name is enabled or not.
+   * @property {boolean} [enabled] Whether the name is enabled or not.
    */
 
   /**
