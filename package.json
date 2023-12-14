@@ -2,7 +2,7 @@
   "name": "@filebase/sdk",
   "version": "1.0.0",
   "description": "",
-  "repository": "https://github.com/filebase/filebase-sdk",
+  "repository": "https://github.com/filebase/sdk",
   "type": "module",
   "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.mjs",

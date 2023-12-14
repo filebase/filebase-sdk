@@ -50,7 +50,7 @@ await bucketManager.create(bucketName);
 // List buckets
 const bucketsList = await bucketManager.list();
 // Toggle bucket privacy off
-await bucketManager.toggle(bucketName, false);
+await bucketManager.setPrivacy(bucketName, false);
 console.dir(bucketsList);
 
 // Initialize ObjectManager

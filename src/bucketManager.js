@@ -98,8 +98,8 @@ class BucketManager {
    * @returns {Promise<boolean>} A promise that resolves to true if the bucket was successfully toggled.
    * @example
    * // Toggle bucket with label of `toggle-bucket-example`
-   * await bucketManager.toggle(`toggle-bucket-example`, true);  // Enabled
-   * await bucketManager.toggle(`toggle-bucket-example`, false); // Disabled
+   * await bucketManager.setPrivacy(`toggle-bucket-example`, true);  // Enabled
+   * await bucketManager.setPrivacy(`toggle-bucket-example`, false); // Disabled
    */
 
   async setPrivacy(name, targetState) {

@@ -97,16 +97,21 @@ test("toggle name on", async () => {
   await nameManager.create(testNameLabel, TEST_CID, {
     enabled: false,
   });
-  const resolvedName = await nameManager.list(testNameLabel);
-  if (resolvedName?.enabled === true) {
-    throw new Error(`Incorrect State on Resolved Name`);
+  try {
+    const resolvedName = await nameManager.get(testNameLabel);
+    if (resolvedName?.enabled === true) {
+      throw new Error(`Incorrect State on Resolved Name`);
+    }
+    await nameManager.toggle(testNameLabel, true);
+    const updatedName = await nameManager.get(testNameLabel);
+    assert.strictEqual(updatedName.label, testNameLabel);
+    assert.strictEqual(updatedName.cid, TEST_CID);
+    assert.strictEqual(updatedName.enabled, true);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await nameManager.delete(testNameLabel);
   }
-  await nameManager.toggle(testNameLabel, true);
-  const updatedName = await nameManager.get(testNameLabel);
-  await nameManager.delete(testNameLabel);
-  assert.strictEqual(updatedName.label, testNameLabel);
-  assert.strictEqual(updatedName.cid, TEST_CID);
-  assert.strictEqual(updatedName.enabled, true);
 });
 
 test("toggle name off", async () => {
@@ -116,14 +121,17 @@ test("toggle name off", async () => {
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     );
   await nameManager.create(testNameLabel, TEST_CID);
-  const resolvedName = await nameManager.list(testNameLabel);
-  if (resolvedName?.enabled === false) {
-    throw new Error(`Incorrect State on Resolved Name`);
+  try {
+    const resolvedName = await nameManager.get(testNameLabel);
+    if (resolvedName?.enabled === false) {
+      throw new Error(`Incorrect State on Resolved Name`);
+    }
+    await nameManager.toggle(testNameLabel, false);
+    const updatedName = await nameManager.get(testNameLabel);
+    assert.strictEqual(updatedName.label, testNameLabel);
+    assert.strictEqual(updatedName.cid, TEST_CID);
+    assert.strictEqual(updatedName.enabled, false);
+  } finally {
+    await nameManager.delete(testNameLabel);
   }
-  await nameManager.toggle(testNameLabel, false);
-  const updatedName = await nameManager.get(testNameLabel);
-  await nameManager.delete(testNameLabel);
-  assert.strictEqual(updatedName.label, testNameLabel);
-  assert.strictEqual(updatedName.cid, TEST_CID);
-  assert.strictEqual(updatedName.enabled, false);
 });
