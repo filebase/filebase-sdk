@@ -51,10 +51,13 @@ test("update name", async () => {
       process.env.TEST_NAME_KEY || process.env.TEST_KEY,
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
-    createdName = await nameManager.create(testNameLabel, TEST_CID),
-    updatedName = await nameManager.update(createdName.label, TEST_CID);
-  await nameManager.delete(testNameLabel);
-  assert.strictEqual(updatedName, true);
+    createdName = await nameManager.create(testNameLabel, TEST_CID);
+  try {
+    const updatedName = await nameManager.update(createdName.label, TEST_CID);
+    assert.strictEqual(updatedName, true);
+  } finally {
+    await nameManager.delete(testNameLabel);
+  }
 });
 
 test("get name", async () => {
@@ -63,11 +66,14 @@ test("get name", async () => {
       process.env.TEST_NAME_KEY || process.env.TEST_KEY,
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
-    createdName = await nameManager.create(testNameLabel, TEST_CID),
-    testName = await nameManager.get(createdName.label);
-  await nameManager.delete(testNameLabel);
-  assert.strictEqual(testName.label, testNameLabel);
-  assert.strictEqual(testName.cid, TEST_CID);
+    createdName = await nameManager.create(testNameLabel, TEST_CID);
+  try {
+    const testName = await nameManager.get(createdName.label);
+    assert.strictEqual(testName.label, testNameLabel);
+    assert.strictEqual(testName.cid, TEST_CID);
+  } finally {
+    await nameManager.delete(testNameLabel);
+  }
 });
 
 test("list names", async () => {

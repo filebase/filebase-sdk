@@ -32,13 +32,16 @@ test("update gateway", async () => {
       process.env.TEST_GW_KEY || process.env.TEST_KEY,
       process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     ),
-    createdName = await gatewayManager.create(testGatewayName),
-    updatedName = await gatewayManager.update(createdName.name, {
+    createdName = await gatewayManager.create(testGatewayName);
+  try {
+    const updatedName = await gatewayManager.update(createdName.name, {
       private: true,
       enabled: false,
     });
-  await gatewayManager.delete(testGatewayName);
-  assert.strictEqual(updatedName, true);
+    assert.strictEqual(updatedName, true);
+  } finally {
+    await gatewayManager.delete(testGatewayName);
+  }
 });
 
 test("get gateway", async () => {
@@ -47,10 +50,13 @@ test("get gateway", async () => {
       process.env.TEST_GW_KEY || process.env.TEST_KEY,
       process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     ),
-    createdName = await gatewayManager.create(testGatewayName, {}),
-    testName = await gatewayManager.get(createdName.name);
-  await gatewayManager.delete(testGatewayName);
-  assert.strictEqual(testName.name, testGatewayName);
+    createdName = await gatewayManager.create(testGatewayName, {});
+  try {
+    const testName = await gatewayManager.get(createdName.name);
+    assert.strictEqual(testName.name, testGatewayName);
+  } finally {
+    await gatewayManager.delete(testGatewayName);
+  }
 });
 
 test("list gateways", async () => {
@@ -81,15 +87,18 @@ test("toggle gateway off", async () => {
       process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
     );
   await gatewayManager.create(testGatewayName);
-  const resolvedName = await gatewayManager.get(testGatewayName);
-  if (resolvedName?.enabled === false) {
-    throw new Error(`Incorrect State on Resolved Name`);
+  try {
+    const resolvedName = await gatewayManager.get(testGatewayName);
+    if (resolvedName?.enabled === false) {
+      throw new Error(`Incorrect State on Resolved Name`);
+    }
+    await gatewayManager.toggle(testGatewayName, false);
+    const updatedName = await gatewayManager.get(testGatewayName);
+    assert.strictEqual(updatedName.name, testGatewayName);
+    assert.strictEqual(updatedName.enabled, false);
+  } finally {
+    await gatewayManager.delete(testGatewayName);
   }
-  await gatewayManager.toggle(testGatewayName, false);
-  const updatedName = await gatewayManager.get(testGatewayName);
-  await gatewayManager.delete(testGatewayName);
-  assert.strictEqual(updatedName.name, testGatewayName);
-  assert.strictEqual(updatedName.enabled, false);
 });
 
 test("toggle gateway on", async () => {
@@ -101,13 +110,16 @@ test("toggle gateway on", async () => {
   await gatewayManager.create(testGatewayName, {
     enabled: false,
   });
-  const resolvedName = await gatewayManager.get(testGatewayName);
-  if (resolvedName?.enabled === true) {
-    throw new Error(`Incorrect State on Resolved Name`);
+  try {
+    const resolvedName = await gatewayManager.get(testGatewayName);
+    if (resolvedName?.enabled === true) {
+      throw new Error(`Incorrect State on Resolved Name`);
+    }
+    await gatewayManager.toggle(testGatewayName, true);
+    const updatedName = await gatewayManager.get(testGatewayName);
+    assert.strictEqual(updatedName.name, testGatewayName);
+    assert.strictEqual(updatedName.enabled, true);
+  } finally {
+    await gatewayManager.delete(testGatewayName);
   }
-  await gatewayManager.toggle(testGatewayName, true);
-  const updatedName = await gatewayManager.get(testGatewayName);
-  await gatewayManager.delete(testGatewayName);
-  assert.strictEqual(updatedName.name, testGatewayName);
-  assert.strictEqual(updatedName.enabled, true);
 });

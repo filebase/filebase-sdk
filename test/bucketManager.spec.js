@@ -16,17 +16,19 @@ test("create bucket", async (t) => {
   const bucketNameToCreate = `${TEST_PREFIX}-create-bucket-test-pass`;
   await bucketManager.create(bucketNameToCreate);
 
-  // List buckets
-  const currentBuckets = await bucketManager.list(),
-    createdBucket = currentBuckets.find((currentBucket) => {
-      return currentBucket.Name === bucketNameToCreate;
-    });
+  try {
+    // List buckets
+    const currentBuckets = await bucketManager.list(),
+      createdBucket = currentBuckets.find((currentBucket) => {
+        return currentBucket.Name === bucketNameToCreate;
+      });
 
-  // Delete new bucket
-  await bucketManager.delete(bucketNameToCreate);
-
-  // Assert new bucket exists
-  assert.equal(createdBucket.Name, bucketNameToCreate);
+    // Assert new bucket exists
+    assert.equal(createdBucket.Name, bucketNameToCreate);
+  } finally {
+    // Delete new bucket
+    await bucketManager.delete(bucketNameToCreate);
+  }
 });
 
 test("list buckets", async () => {
@@ -92,30 +94,32 @@ test("set bucket privacy to public", async (t) => {
   const bucketNameToCreate = `${TEST_PREFIX}-toggle-bucket-test-pass`;
   await bucketManager.create(bucketNameToCreate);
 
-  // List buckets
-  const currentBuckets = await bucketManager.list(),
-    createdBucket = currentBuckets.find((currentBucket) => {
-      return currentBucket.Name === bucketNameToCreate;
-    });
+  try {
+    // List buckets
+    const currentBuckets = await bucketManager.list(),
+      createdBucket = currentBuckets.find((currentBucket) => {
+        return currentBucket.Name === bucketNameToCreate;
+      });
 
-  // Check Privacy
-  const initialPrivacy = await bucketManager.getPrivacy(bucketNameToCreate);
-  if (initialPrivacy === false) {
-    throw new Error(`Unexpected Privacy State on Bucket`);
+    // Check Privacy
+    const initialPrivacy = await bucketManager.getPrivacy(bucketNameToCreate);
+    if (initialPrivacy === false) {
+      throw new Error(`Unexpected Privacy State on Bucket`);
+    }
+
+    // Toggle Privacy
+    await bucketManager.setPrivacy(bucketNameToCreate, false);
+
+    // Check Privacy
+    const updatedPrivacy = await bucketManager.getPrivacy(bucketNameToCreate);
+    if (updatedPrivacy === true) {
+      throw new Error(`Unexpected Privacy State on Bucket`);
+    }
+
+    // Assert new bucket exists
+    assert.equal(createdBucket.Name, bucketNameToCreate);
+  } finally {
+    // Delete new bucket
+    await bucketManager.delete(bucketNameToCreate);
   }
-
-  // Toggle Privacy
-  await bucketManager.setPrivacy(bucketNameToCreate, false);
-
-  // Check Privacy
-  const updatedPrivacy = await bucketManager.getPrivacy(bucketNameToCreate);
-  if (updatedPrivacy === true) {
-    throw new Error(`Unexpected Privacy State on Bucket`);
-  }
-
-  // Delete new bucket
-  await bucketManager.delete(bucketNameToCreate);
-
-  // Assert new bucket exists
-  assert.equal(createdBucket.Name, bucketNameToCreate);
 });
