@@ -51,7 +51,13 @@ class GatewayManager {
    *
    * @param {string} name Unique name across entire platform for the gateway.  Must be a valid subdomain name.
    * @param {gatewayOptions} [options]
-   * @returns {*}
+   * @returns {Promise<gateway>} - A promise that resolves to the value of a gateway.
+   * @example
+   * // Create gateway with name of `create-gateway-example` and a custom domain of `cname.mycustomdomain.com`.
+   * // The custom domain must already exist and have a CNAME record pointed at `create-gateway-example.myfilebase.com`.
+   * await gatewayManager.create(`create-gateway-example`, {
+   *   domain: `cname.mycustomdomain.com`
+   * });
    */
   async create(name, options = {}) {
     let createOptions = {
@@ -128,6 +134,11 @@ class GatewayManager {
    * @param {gatewayOptions} options - The options for the update operation.
    *
    * @returns {Promise<boolean>} - A Promise that resolves to true if the gateway was updated.
+   * @example
+   * // Update gateway with name of `update-gateway-example` and set the gateway to only serve CIDs pinned by user.
+   * await gatewayManager.update(`update-gateway-example`, {
+   *   private: true
+   * });
    */
   async update(name, options) {
     const updateOptions = {

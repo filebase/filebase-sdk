@@ -119,6 +119,9 @@ class NameManager {
    * @param {nameOptions} options - The options for the set operation.
    *
    * @returns {Promise<boolean>} - A Promise that resolves to true if the IPNS name was updated.
+   * @example
+   * // Update name with label of `update-name-example` and set the value of the IPNS name.
+   * await nameManager.update(`update-name-example`, `bafybeidt4nmaci476lyon2mvgfmwyzysdazienhxs2bqnfpdainzjuwjom`);
    */
   async update(label, cid, options = {}) {
     const updateOptions = {

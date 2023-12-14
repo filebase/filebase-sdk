@@ -111,26 +111,20 @@ class ObjectManager {
    * ]);
    */
   async upload(key, source, bucket = this.#defaultBucket) {
+    // Generate Upload UUID
+    const uploadUUID = uuidv4();
+
     // Setup Upload Options
-    const uploadUUID = uuidv4(),
-      temporaryBlockstoreDir = path.resolve(
-        os.tmpdir(),
-        "filebase-sdk",
-        "uploads",
-        uploadUUID,
-      ),
-      temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`,
-      uploadOptions = {
-        client: this.#client,
-        params: {
-          Bucket: bucket,
-          Key: key,
-          Body: source,
-        },
-        queueSize: this.#maxConcurrentUploads,
-        partSize: 1024 * 1024 * 105,
-        leavePartsOnError: false, // optional manually handle dropped parts
-      };
+    const uploadOptions = {
+      client: this.#client,
+      params: {
+        Bucket: bucket,
+        Key: key,
+        Body: source,
+      },
+      queueSize: this.#maxConcurrentUploads,
+      partSize: 26843546, //25.6Mb || 250Gb Max File Size
+    };
 
     // Pack Multiple Files into CAR file for upload
     let parsedEntries = {};
@@ -140,12 +134,22 @@ class ObjectManager {
         import: "car",
       };
 
+      let temporaryCarFilePath, temporaryBlockstoreDir;
       try {
+        // Setup Blockstore
+        temporaryBlockstoreDir = path.resolve(
+          os.tmpdir(),
+          "filebase-sdk",
+          "uploads",
+          uploadUUID,
+        );
+        temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`;
         await mkdir(temporaryBlockstoreDir, { recursive: true });
-        const temporaryFsBlockstore = new FsBlockstore(temporaryBlockstoreDir),
-          heliaFs = unixfs({
-            blockstore: temporaryFsBlockstore,
-          });
+        const temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir);
+
+        const heliaFs = unixfs({
+          blockstore: temporaryBlockstore,
+        });
 
         for (let sourceEntry of source) {
           sourceEntry.path =
@@ -159,20 +163,26 @@ class ObjectManager {
         const rootEntry = parsedEntries[uploadUUID];
 
         // Get carFile stream here
-        const carExporter = car({ blockstore: temporaryFsBlockstore }),
-          { writer, out } = CarWriter.create([rootEntry.cid]),
-          output = createWriteStream(temporaryCarFilePath);
+        const carExporter = car({ blockstore: temporaryBlockstore }),
+          { writer, out } = CarWriter.create([rootEntry.cid]);
+
+        // Put carFile stream to disk
+        const output = createWriteStream(temporaryCarFilePath);
         Readable.from(out).pipe(output);
         await carExporter.export(rootEntry.cid, writer);
 
-        // Upload carFile via S3
+        // Set Uploader to Read from carFile on disk
         uploadOptions.params.Body = createReadStream(temporaryCarFilePath);
+
+        // Upload carFile via S3
         const parallelUploads3 = new Upload(uploadOptions);
         await parallelUploads3.done();
-        await temporaryFsBlockstore.close();
+        await temporaryBlockstore.close();
       } finally {
-        // Delete Temporary Blockstore
-        await rm(temporaryBlockstoreDir, { recursive: true, force: true });
+        if (typeof temporaryBlockstoreDir !== "undefined") {
+          // Delete Temporary Blockstore
+          await rm(temporaryBlockstoreDir, { recursive: true, force: true });
+        }
       }
     } else {
       // Upload file via S3
