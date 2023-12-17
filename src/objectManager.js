@@ -90,6 +90,7 @@ class ObjectManager {
    * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
    *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
    *    and a 'content' property specifying the content of the file.
+   * @param {Object} [metadata] Optional metadata for pin object
    * @param {objectOptions} [options] - The options for uploading the file.
    * @returns {Promise<uploadObjectResult>}
    * @example
@@ -111,7 +112,7 @@ class ObjectManager {
    *  },
    * ]);
    */
-  async upload(key, source, options) {
+  async upload(key, source, metadata, options) {
     // Generate Upload UUID
     const uploadUUID = uuidv4();
 
@@ -123,6 +124,7 @@ class ObjectManager {
           Bucket: bucket,
           Key: key,
           Body: source,
+          Metadata: metadata || {},
         },
         queueSize: this.#maxConcurrentUploads,
         partSize: 26843546, //25.6Mb || 250Gb Max File Size
@@ -133,6 +135,7 @@ class ObjectManager {
     if (Array.isArray(source)) {
       // Mark Upload as a CAR file import
       uploadOptions.params.Metadata = {
+        ...uploadOptions.params.Metadata,
         import: "car",
       };
 
