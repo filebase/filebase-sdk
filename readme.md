@@ -32,15 +32,12 @@ The snippet below shows how to create a new bucket with `BucketManager`, upload 
 with `ObjectManager`, publish the object to IPNS with `NameManager`, delete the object with `ObjectManager` and finally
 delete the bucket with `BucketManager`.
 
-To use the library in your project, use npm or yarn to install the [`@filebase/sdk`](https://www.npmjs.com/package/@filebase/sdk) module.
+To use the library in your project, use npm or yarn to install the [`@filebase/sdk`](https://www.npmjs.com/package/@filebase/sdk) module.  Requires node.js 16+.
 
 **node.js**
 ````js
 // Import Classes
-import {BucketManager, ObjectManager, NameManager} from 'filebase-sdk'
-
-// Setup S3 Config
-const s3Config = {};
+import {BucketManager, ObjectManager, NameManager, GatewayManager} from 'filebase-sdk'
 
 // Initialize BucketManager
 const bucketManager = new BucketManager(S3_KEY, S3_SECRET);

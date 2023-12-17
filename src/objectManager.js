@@ -68,15 +68,16 @@ class ObjectManager {
   }
 
   /**
-   * @typedef {Object} object
-   * @property {string} cid The CID of the uploaded object
-   * @property {array<objectEntry>} [entries] If a directory then returns an array of the containing objects
+   * @typedef {Object} objectOptions
+   * @property {string} [bucket] - The bucket to pin the IPFS CID into.
    */
 
   /**
-   * @typedef {Object} objectEntry
+   * @typedef {Object} uploadObjectResult
    * @property {string} cid The CID of the uploaded object
-   * @property {string} path The path of the object
+   * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
+   * @property {string} entries.cid The CID of the uploaded object
+   * @property {string} entries.path The path of the object
    */
 
   /**
@@ -89,8 +90,8 @@ class ObjectManager {
    * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
    *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
    *    and a 'content' property specifying the content of the file.
-   * @param {string} [bucket] - The bucket name. Default is the value of the defaultBucket property.
-   * @returns {Promise<object>}
+   * @param {objectOptions} [options] - The options for uploading the file.
+   * @returns {Promise<uploadObjectResult>}
    * @example
    * // Upload Object
    * await objectManager.upload("my-object", Buffer.from("Hello World!"));
@@ -110,21 +111,22 @@ class ObjectManager {
    *  },
    * ]);
    */
-  async upload(key, source, bucket = this.#defaultBucket) {
+  async upload(key, source, options) {
     // Generate Upload UUID
     const uploadUUID = uuidv4();
 
     // Setup Upload Options
-    const uploadOptions = {
-      client: this.#client,
-      params: {
-        Bucket: bucket,
-        Key: key,
-        Body: source,
-      },
-      queueSize: this.#maxConcurrentUploads,
-      partSize: 26843546, //25.6Mb || 250Gb Max File Size
-    };
+    const bucket = options?.bucket || this.#defaultBucket,
+      uploadOptions = {
+        client: this.#client,
+        params: {
+          Bucket: bucket,
+          Key: key,
+          Body: source,
+        },
+        queueSize: this.#maxConcurrentUploads,
+        partSize: 26843546, //25.6Mb || 250Gb Max File Size
+      };
 
     // Pack Multiple Files into CAR file for upload
     let parsedEntries = {};
@@ -213,15 +215,15 @@ class ObjectManager {
   /**
    * @summary Downloads an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be downloaded.
-   * @param {string} [bucket] - The name of the bucket to download from. If not provided, the default bucket will be used.
+   * @param {objectOptions} [options] - The options for downloading the file.
    * @returns {Promise<Object>} - A promise that resolves with the contents of the downloaded object as a Stream.
    * @example
    * // Download object with name of `download-object-example`
    * await objectManager.download(`download-object-example`);
    */
-  async download(key, bucket = this.#defaultBucket) {
+  async download(key, options) {
     const command = new GetObjectCommand({
-        Bucket: bucket,
+        Bucket: options?.bucket || this.#defaultBucket,
         Key: key,
       }),
       response = await this.#client.send(command);
@@ -289,15 +291,15 @@ class ObjectManager {
   /**
    * @summary Deletes an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be deleted.
-   * @param {string} [bucket] - The name of the bucket that contains the object. Defaults to the default bucket.
+   * @param {objectOptions} [options] - The options for deleting the file.
    * @returns {Promise<Boolean>} - A Promise that resolves with the result of the delete operation.
    * @example
    * // Delete object with name of `delete-object-example`
    * await objectManager.delete(`delete-object-example`);
    */
-  async delete(key, bucket = this.#defaultBucket) {
+  async delete(key, options) {
     const command = new DeleteObjectCommand({
-      Bucket: bucket,
+      Bucket: options?.bucket || this.#defaultBucket,
       Key: key,
     });
 

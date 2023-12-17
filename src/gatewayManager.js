@@ -91,14 +91,20 @@ class GatewayManager {
     const deleteResponse = await this.#client.request({
       method: "DELETE",
       url: `/${name}`,
+      validateStatus: (status) => {
+        return status === 202 || status === 404;
+      },
     });
-    return deleteResponse.status === 202;
+    if (deleteResponse.status === 404) {
+      throw new Error(`Could not find matching name for gateway`);
+    }
+    return true;
   }
 
   /**
    * @summary Returns the value of a gateway
    * @param {string} name - Parameter representing the name to get.
-   * @returns {Promise<gateway>} - A promise that resolves to the value of a gateway.
+   * @returns {Promise<gateway|false>} - A promise that resolves to the value of a gateway.
    * @example
    * // Get gateway with name of `gateway-get-example`
    * await gatewayManager.get(`gateway-get-example`);
@@ -157,8 +163,14 @@ class GatewayManager {
       method: "PUT",
       url: `/${name}`,
       data: updateOptions,
+      validateStatus: (status) => {
+        return status === 200 || status === 404;
+      },
     });
-    return updateResponse.status === 200;
+    if (updateResponse.status === 404) {
+      throw new Error(`Could not find matching name for gateway`);
+    }
+    return true;
   }
 
   /**
@@ -178,7 +190,13 @@ class GatewayManager {
       data: {
         enabled: Boolean(targetState),
       },
+      validateStatus: (status) => {
+        return status === 200 || status === 404;
+      },
     });
+    if (toggleResponse.status === 404) {
+      throw new Error(`Could not find matching name for gateway`);
+    }
     return toggleResponse.status === 200;
   }
 }

@@ -130,12 +130,18 @@ class NameManager {
     if (options?.enabled) {
       updateOptions.enabled = Boolean(options.enabled);
     }
-    const updateResponse = await this.#client.request({
+    const updateResult = await this.#client.request({
       method: "PUT",
       url: `/${label}`,
       data: updateOptions,
+      validateStatus: (status) => {
+        return status === 200 || status === 404;
+      },
     });
-    return updateResponse.status === 200;
+    if (updateResult.status === 404) {
+      throw new Error(`Could not find matching label for name`);
+    }
+    return true;
   }
 
   /**
@@ -180,11 +186,17 @@ class NameManager {
    * await nameManager.delete(`delete-name-example`);
    */
   async delete(label) {
-    const deleteResponse = await this.#client.request({
+    const deleteResult = await this.#client.request({
       method: "DELETE",
       url: `/${label}`,
+      validateStatus: (status) => {
+        return status === 202 || status === 404;
+      },
     });
-    return deleteResponse.status === 202;
+    if (deleteResult.status === 404) {
+      throw new Error(`Could not find matching label for name`);
+    }
+    return true;
   }
 
   /**
@@ -204,8 +216,14 @@ class NameManager {
       data: {
         enabled: targetState,
       },
+      validateStatus: (status) => {
+        return status === 200 || status === 404;
+      },
     });
-    return toggleResponse.status === 200;
+    if (toggleResponse.status === 404) {
+      throw new Error(`Could not find matching label for name`);
+    }
+    return true;
   }
 }
 
