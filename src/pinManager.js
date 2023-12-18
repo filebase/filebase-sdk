@@ -101,10 +101,15 @@ class PinManager {
    */
 
   /**
-   *
+   * @summary List the pins in a given bucket
    * @param {listPinOptions} [listOptions]
    * @param {pinOptions} [options]
    * @returns {Promise<listPinResults>}
+   * @example
+   * // List pins in bucket with a limit of 1000
+   * await pinManager.list({
+   *   limit: 1000
+   * });
    */
   async list(listOptions, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),
@@ -122,12 +127,17 @@ class PinManager {
   }
 
   /**
-   *
+   * @summary Create a pin in the selected bucket
    * @param {string} key Key or path of the file in the bucket
    * @param {string} cid Content Identifier (CID) to be pinned recursively
    * @param {Object} [metadata] Optional metadata for pin object
    * @param {pinOptions} [options] Options for pinning the object
    * @returns {Promise<pinStatus>}
+   * @example
+   * // Create Pin with Metadata
+   * await pinManager.create("my-pin", "QmTJkc7crTuPG7xRmCQSz1yioBpCW3juFBtJPXhQfdCqGF", {
+   *   "application": "my-custom-app-on-filebase"
+   * }
    */
   async create(key, cid, metadata, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),
@@ -146,6 +156,19 @@ class PinManager {
     return pinStatus.data;
   }
 
+  /**
+   * @summary Replace a pinned object in the selected bucket
+   * @param {string} requestid Unique ID for the pinned object
+   * @param {string} cid Content Identifier (CID) to be pinned recursively
+   * @param {Object} [metadata] Optional metadata for pin object
+   * @param {pinOptions} [options] Options for pinning the object
+   * @returns {Promise<pinStatus>}
+   * @example
+   * // Replace Pin with Metadata
+   * await pinManager.create("qr4231213", "QmTJkc7crTuPG7xRmCQSz1yioBpCW3juFBtJPXhQfdCqGF", {
+   *   "revision": Date.now()
+   * }
+   */
   async replace(requestid, cid, metadata, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),
       pinStatusResult = await this.#client.request({
@@ -171,10 +194,13 @@ class PinManager {
   }
 
   /**
-   *
+   * @summary Download a pin from the selected IPFS gateway
    * @param {string} cid
    * @param {pinDownloadOptions} [options]
    * @returns {Promise<stream>}
+   * @example
+   * // Download Pin by CID
+   * await pinManager.download("QmTJkc7crTuPG7xRmCQSz1yioBpCW3juFBtJPXhQfdCqGF");
    */
   async download(cid, options) {
     const downloadOptions = Object.assign(this.#gatewayConfiguration, options);
@@ -182,10 +208,13 @@ class PinManager {
   }
 
   /**
-   *
+   * @summary Get details about a pinned object
    * @param {string} requestid Globally unique identifier of the pin request
    * @param {pinOptions} [options] Options for getting the pin
    * @returns {Promise<pinStatus|false>}
+   * @example
+   * // Get Pin Info by RequestId
+   * await pinManager.get("qr4231214");
    */
   async get(requestid, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),
@@ -208,10 +237,13 @@ class PinManager {
   }
 
   /**
-   *
+   * @summary Delete a pinned object from the selected bucket
    * @param requestid Globally unique identifier of the pin request
    * @param {pinOptions} [options] Options for deleting the pin
    * @returns {Promise<boolean>}
+   * @example
+   * // Delete Pin by RequestId
+   * await pinManager.delete("qr4231213");
    */
   async delete(requestid, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),

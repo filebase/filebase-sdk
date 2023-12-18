@@ -48,7 +48,7 @@ class GatewayManager {
    */
 
   /**
-   *
+   * @summary Creates a gateway with the given name and options
    * @param {string} name Unique name across entire platform for the gateway.  Must be a valid subdomain name.
    * @param {gatewayOptions} [options]
    * @returns {Promise<gateway>} - A promise that resolves to the value of a gateway.

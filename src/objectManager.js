@@ -19,7 +19,6 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
-import PinManager from "./pinManager.js";
 import { downloadFromGateway } from "./helpers.js";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
@@ -27,9 +26,6 @@ class ObjectManager {
   #DEFAULT_ENDPOINT = "https://s3.filebase.com";
   #DEFAULT_REGION = "us-east-1";
   #DEFAULT_MAX_CONCURRENT_UPLOADS = 4;
-
-  #DEFAULT_GATEWAY = "https://ipfs.filebase.io";
-  #DEFAULT_TIMEOUT = 60000;
 
   #client;
   #credentials;
@@ -60,7 +56,11 @@ class ObjectManager {
    * import { ObjectManager } from "@filebase/sdk";
    * const objectManager = new ObjectManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD", {
    *   bucket: "my-default-bucket",
-   *   maxConcurrentUploads: 4
+   *   maxConcurrentUploads: 4,
+   *   gateway: {
+   *     endpoint: "https://my-default-gateway.mydomain.com
+   *     token: SUPER_SECRET_GATEWAY_TOKEN
+   *   }
    * });
    */
   constructor(clientKey, clientSecret, options) {
@@ -88,7 +88,7 @@ class ObjectManager {
     this.#gatewayConfiguration = {
       endpoint: options?.gateway?.endpoint,
       token: options?.gateway?.token,
-      timeout: options?.gateway?.timeout || this.#DEFAULT_TIMEOUT,
+      timeout: options?.gateway?.timeout,
     };
   }
 
@@ -123,6 +123,10 @@ class ObjectManager {
    * @example
    * // Upload Object
    * await objectManager.upload("my-object", Buffer.from("Hello World!"));
+   * // Upload Object with Metadata
+   * await objectManager.upload("my-custom-object", Buffer.from("Hello Big World!"), {
+   *   "application": "my-filebase-app"
+   * });
    * // Upload Directory
    * await objectManager.upload("my-first-directory", [
    *  {
