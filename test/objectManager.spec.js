@@ -45,7 +45,8 @@ async function uploadObject(bucket, key, body) {
       Prefix: key,
       MaxKeys: 1,
     }),
-    uploadedObject = objectsList.length > 0 ? objectsList[0] : undefined;
+    uploadedObject =
+      objectsList.Contents.length > 0 ? objectsList.Contents[0] : undefined;
 
   return typeof uploadedObject !== "undefined";
 }
@@ -108,7 +109,9 @@ test("delete object", async () => {
         MaxKeys: 1,
       }),
       uploadedObject =
-        existingObjects.length > 0 ? existingObjects[0] : undefined;
+        existingObjects.Contents.length > 0
+          ? existingObjects.Contents[0]
+          : undefined;
     assert.equal(typeof uploadedObject, "undefined");
   } finally {
     await deleteBucket(deleteTestBucket);
@@ -228,11 +231,11 @@ test("list objects", async () => {
       { bucket: listTestBucket },
     );
 
-    const bucketList = await objectManager.list({
+    const objectList = await objectManager.list({
       MaxKeys: 50,
       Prefix: `list-object-test-`,
     });
-    assert.equal(bucketList.length, 26);
+    assert.equal(objectList.Contents.length, 26);
 
     let deletedObjectCount = 0;
     while (deletedObjectCount < 26) {

@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: '20.x'
       - run: npm ci
-      - run: npm test
+      - run: npm test --test-concurrency=1
         env:
           TEST_KEY: ${{ secrets.TEST_S3_KEY }}
           TEST_SECRET: ${{ secrets.TEST_S3_SECRET }}

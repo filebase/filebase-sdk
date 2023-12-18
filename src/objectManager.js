@@ -19,6 +19,8 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
+import PinManager from "./pinManager.js";
+import { downloadFromGateway } from "./helpers.js";
 
 /** Interacts with an S3 client to perform various operations on objects in a bucket. */
 class ObjectManager {
@@ -26,14 +28,27 @@ class ObjectManager {
   #DEFAULT_REGION = "us-east-1";
   #DEFAULT_MAX_CONCURRENT_UPLOADS = 4;
 
+  #DEFAULT_GATEWAY = "https://ipfs.filebase.io";
+  #DEFAULT_TIMEOUT = 60000;
+
   #client;
+  #credentials;
   #defaultBucket;
+  #gatewayConfiguration;
   #maxConcurrentUploads;
 
   /**
    * @typedef {Object} objectManagerOptions Optional settings for the constructor.
    * @property {string} [bucket] Default bucket to use.
+   * @property {objectDownloadOptions} [gateway] Default gateway to use.
    * @property {number} [maxConcurrentUploads] The maximum number of concurrent uploads.
+   */
+
+  /**
+   * @typedef {Object} objectDownloadOptions Optional settings for downloading objects
+   * @property {string} endpoint Default gateway to use.
+   * @property {string} [token] Token for the default gateway.
+   * @property {number} [timeout=60000] Timeout for the default gateway
    */
 
   /**
@@ -64,7 +79,17 @@ class ObjectManager {
     this.#defaultBucket = options?.bucket;
     this.#maxConcurrentUploads =
       options?.maxConcurrentUploads || this.#DEFAULT_MAX_CONCURRENT_UPLOADS;
+    this.#credentials = {
+      key: clientKey,
+      secret: clientSecret,
+    };
     this.#client = new S3Client(clientConfiguration);
+
+    this.#gatewayConfiguration = {
+      endpoint: options?.gateway?.endpoint,
+      token: options?.gateway?.token,
+      timeout: options?.gateway?.timeout || this.#DEFAULT_TIMEOUT,
+    };
   }
 
   /**
@@ -75,6 +100,7 @@ class ObjectManager {
   /**
    * @typedef {Object} uploadObjectResult
    * @property {string} cid The CID of the uploaded object
+   * @property {function} download Convenience function to download the object via S3 or the selected gateway
    * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
    * @property {string} entries.cid The CID of the uploaded object
    * @property {string} entries.path The path of the object
@@ -87,11 +113,12 @@ class ObjectManager {
    *
    * @summary Uploads a file or a CAR file to the specified bucket.
    * @param {string} key - The key or path of the file in the bucket.
-   * @param {Buffer|ReadableStream|Array<Object>} source - The content of the file to be uploaded.
-   *    If an array of objects is provided, each object should have a 'path' property specifying the path of the file
-   *    and a 'content' property specifying the content of the file.
+   * @param {Buffer|ReadableStream|Array<Object>} source - The content of the object to be uploaded.
+   *    If an array of files is provided, each file should have a 'path' property specifying the path of the file
+   *    and a 'content' property specifying the content of the file.  The SDK will then construct a CAR file locally
+   *    and use that as the content of the object to be uploaded.
    * @param {Object} [metadata] Optional metadata for pin object
-   * @param {objectOptions} [options] - The options for uploading the file.
+   * @param {objectOptions} [options] - The options for uploading the object.
    * @returns {Promise<uploadObjectResult>}
    * @example
    * // Upload Object
@@ -207,18 +234,50 @@ class ObjectManager {
     if (Object.keys(parsedEntries).length === 0) {
       return {
         cid: responseCid,
+        download: () => {
+          return this.#routeDownload(responseCid, key, options);
+        },
       };
     }
     return {
       cid: responseCid,
+      download: () => {
+        return this.#routeDownload(responseCid, key, options);
+      },
       entries: parsedEntries,
     };
+  }
+
+  async #routeDownload(cid, key, options) {
+    return typeof this.#gatewayConfiguration.endpoint !== "undefined"
+      ? downloadFromGateway(cid, this.#gatewayConfiguration)
+      : this.download(key, options);
+  }
+
+  /**
+   * @summary Gets an objects info and metadata using the S3 API.
+   * @param {string} key - The key of the object to be inspected.
+   * @param {objectOptions} [options] - The options for inspecting the object.
+   * @returns {Promise<*>}
+   */
+  async get(key, options) {
+    const command = new HeadObjectCommand({
+        Bucket: options?.bucket || this.#defaultBucket,
+        Key: key,
+      }),
+      response = await this.#client.send(command);
+
+    response.Body.download = () => {
+      return this.#routeDownload(response.Body.metadata.CID, key, options);
+    };
+
+    return response.Body;
   }
 
   /**
    * @summary Downloads an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be downloaded.
-   * @param {objectOptions} [options] - The options for downloading the file.
+   * @param {objectOptions} [options] - The options for downloading the object..
    * @returns {Promise<Object>} - A promise that resolves with the contents of the downloaded object as a Stream.
    * @example
    * // Download object with name of `download-object-example`
@@ -235,6 +294,20 @@ class ObjectManager {
   }
 
   /**
+   * @typedef {Object} listObjectsResult
+   * @property {boolean} IsTruncated Indicates if more results exist on the server
+   * @property {string} NextContinuationToken ContinuationToken used to paginate list requests
+   * @property {Array<Object>} Contents List of Keys stored in the S3 Bucket
+   * @property {string} Contents.Key Key of the Object
+   * @property {string} Contents.LastModified Date Last Modified of the Object
+   * @property {string} Contents.CID CID of the Object
+   * @property {string} Contents.ETag ETag of the Object
+   * @property {number} Contents.Size Size in Bytes of the Object
+   * @property {string} Contents.StorageClass Class of Storage of the Object
+   * @property {function} Contents.download Convenience function to download the item using the S3 gateway
+   */
+
+  /**
    * @typedef {Object} listObjectOptions
    * @property {string} [Bucket] The name of the bucket. If not provided, the default bucket will be used.
    * @property {string} [ContinuationToken=null] Continues listing from this objects name.
@@ -246,7 +319,7 @@ class ObjectManager {
    * Retrieves a list of objects from a specified bucket.
    *
    * @param {listObjectOptions} options - The options for listing objects.
-   * @returns {Promise<Array>} - A promise that resolves to an array of objects.
+   * @returns {Promise<listObjectsResult>} - A promise that resolves to an array of objects.
    * @example
    * // List objects in bucket with a limit of 1000
    * await objectManager.list({
@@ -275,20 +348,9 @@ class ObjectManager {
         ...commandOptions,
       });
 
-    let isTruncated = true,
-      bucketContents = [];
-    while (isTruncated && bucketContents.length < limit) {
-      const { Contents, IsTruncated, NextContinuationToken } =
-        await this.#client.send(command);
-      if (typeof Contents === "undefined") {
-        isTruncated = false;
-        continue;
-      }
-      bucketContents = bucketContents.concat(Contents);
-      isTruncated = IsTruncated;
-      command.input.ContinuationToken = NextContinuationToken;
-    }
-    return bucketContents.slice(0, limit);
+    const { Contents, IsTruncated, NextContinuationToken } =
+      await this.#client.send(command);
+    return { Contents, IsTruncated, NextContinuationToken };
   }
 
   /**

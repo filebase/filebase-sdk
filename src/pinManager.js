@@ -1,11 +1,10 @@
 import axios from "axios";
+import { downloadFromGateway } from "./helpers.js";
 
 /** Provides methods for managing pins in an REST endpoint. */
 class PinManager {
   #DEFAULT_ENDPOINT = "https://api.filebase.io";
   #DEFAULT_TIMEOUT = 60000;
-
-  #DEFAULT_GATEWAY = "https://ipfs.filebase.io";
 
   #client;
   #credentials;
@@ -20,7 +19,7 @@ class PinManager {
 
   /**
    * @typedef {Object} pinDownloadOptions Optional settings for downloading pins
-   * @property {string} [endpoint="https://ipfs.filebase.io"] Default gateway to use.
+   * @property {string} endpoint Default gateway to use.
    * @property {string} [token] Token for the default gateway.
    * @property {number} [timeout=60000] Timeout for the default gateway
    */
@@ -57,7 +56,7 @@ class PinManager {
     });
 
     this.#gatewayConfiguration = {
-      endpoint: options?.gateway?.endpoint || this.#DEFAULT_GATEWAY,
+      endpoint: options?.gateway?.endpoint,
       token: options?.gateway?.token,
       timeout: options?.gateway?.timeout || this.#DEFAULT_TIMEOUT,
     };
@@ -178,23 +177,8 @@ class PinManager {
    * @returns {Promise<stream>}
    */
   async download(cid, options) {
-    const downloadHeaders = {};
-    if (this.#gatewayConfiguration.token || options?.token) {
-      downloadHeaders["x-filebase-gateway-token"] =
-        this.#gatewayConfiguration.token || options.token;
-    }
-
-    const downloadEndpoint =
-        options?.endpoint || this.#gatewayConfiguration.endpoint,
-      getResponse = await this.#client.request({
-        method: "GET",
-        baseURL: downloadEndpoint,
-        url: `/ipfs/${cid}`,
-        headers: downloadHeaders,
-        type: "stream",
-        timeout: this.#gatewayConfiguration.timeout,
-      });
-    return getResponse.data;
+    const downloadOptions = Object.assign(this.#gatewayConfiguration, options);
+    return downloadFromGateway(cid, downloadOptions);
   }
 
   /**
