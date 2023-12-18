@@ -40,9 +40,6 @@ test("replace pin", async () => {
     const replacedPin = await pinManager.replace(
       createdPin.requestid,
       TEST_CID_2,
-      {
-        updatedByApp: Date.now(),
-      },
     );
     assert.strictEqual(replacedPin.requestid, createdPin.requestid);
     assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
@@ -78,6 +75,9 @@ test("download pin", async () => {
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
       {
         bucket: TEST_BUCKET,
+        gateway: {
+          endpoint: process.env.TEST_IPFS_GATEWAY,
+        },
       },
     );
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
@@ -96,6 +96,9 @@ test("download pin by reference", async () => {
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
       {
         bucket: TEST_BUCKET,
+        gateway: {
+          endpoint: process.env.TEST_IPFS_GATEWAY,
+        },
       },
     );
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
