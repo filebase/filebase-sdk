@@ -37,51 +37,30 @@ To use the library in your project, use npm or yarn to install the [`@filebase/s
 **node.js**
 ````js
 // Import Classes
-import {BucketManager, ObjectManager, NameManager, GatewayManager} from 'filebase-sdk'
+import {BucketManager, ObjectManager, NameManager, GatewayManager, PinManager} from 'filebase-sdk'
 
 // Initialize BucketManager
 const bucketManager = new BucketManager(S3_KEY, S3_SECRET);
 // Create bucket
 const bucketName = `create-bucket-[random string]`;
 await bucketManager.create(bucketName);
-// List buckets
-const bucketsList = await bucketManager.list();
-// Toggle bucket privacy off
-await bucketManager.setPrivacy(bucketName, false);
-console.dir(bucketsList);
 
 // Initialize ObjectManager
-const objectManager = new ObjectManager(S3_KEY, S3_SECRET, bucketName);
+const objectManager = new ObjectManager(S3_KEY, S3_SECRET, {
+  bucket: bucketName
+});
 // Upload Object
 const objectName = `new-object`;
 const uploadedObject = await objectManager.upload(objectName, body);
-// Confirm Object Uploaded
-const objectsList = await objectManager.list({
-    Prefix: key,
-    MaxKeys: 1,
-  });
-console.dir(objectsList)
+// Download Object
+await uploadedObject.download();
 
 // Initialize NameManager
 const nameManager = new NameManager(S3_KEY, S3_SECRET);
 // Create New IPNS Name with Broadcast Disabled
-const ipnsName = await nameManager.create(`myFirstIpnsKey`, uploadedObject.cid, {
-  enabled: true
-});
-// Update IPNS Value and Optionally Enable the Broadcast
 const ipnsLabel = `myFirstIpnsKey`;
-await nameManager.set(ipnsLabel, uploadedObject.cid, {
-  enabled: true,
-});
-// Enable IPNS Broadcast without updating the IPNS Record
-await nameManager.toggle(ipnsLabel, true);
-// List IPNS Names
-const myIpnsNames = await nameManager.list();
-// List Specific IPNS Name
-const myIpnsName = await nameManager.list(ipnsLabel);
-// Import IPNS Name
-const myImportedIpnsName = await nameManager.import(ipnsLabel, uploadedObject.cid, Base64EncodedPrivateKey, {
-  enabled: false,
+const ipnsName = await nameManager.create(ipnsLabel, uploadedObject.cid, {
+  enabled: true
 });
 
 // Initialize GatewayManager
@@ -89,28 +68,18 @@ const gatewayManager = new GatewayManager(S3_KEY, S3_SECRET);
 // Create New Gateway
 const gatewayName = "myRandomGatewayName";
 const myGateway = await gatewayManager.create(gatewayName);
-// Get Gateway Setup
-const gatewayConfig = await gatewayManager.get(gatewayName);
-// List IPFS Gateways
-const myGateways = await gatewayManager.list();
-// Update Gateway
-const myUpdatedGateway = await gatewayManager.update(gatewayName, {
-  enabled: false
+
+// Initialize PinManager
+const pinManager = new PinManager(S3_KEY, S3_SECRET, {
+  bucket: bucketName,
+  gateway: {
+    endpoint: "https://myRandomGatewayName.myfilebase.com"
+  }
 });
-// Toggle Gateway State
-await gatewayManager.toggle(gatewayName, true)
-
-// Delete Object
-await objectManager.delete(objectName);
-
-// Delete Bucket
-await bucketManager.delete(bucketName);
-
-// Delete Name
-await nameManager.delete(ipnsLabel);
-
-// Delete Gateway
-await gatewayManager.delete(gatewayName);
+// Create New Pin with Metadata
+const myNewPin = await pinManager.create("my-pin", "QmTJkc7crTuPG7xRmCQSz1yioBpCW3juFBtJPXhQfdCqGF", {
+  "application": "my-custom-app-on-filebase"
+});
 ````
 
 Full API reference doc for the JS client are available at https://filebase.github.io/filebase-sdk

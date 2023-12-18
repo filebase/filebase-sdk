@@ -11,6 +11,7 @@ class NameManager {
    * @summary Creates a new instance of the constructor.
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
+   * @tutorial quickstart-name
    * @example
    * import { NameManager } from "@filebase/sdk";
    * const nameManager = new NameManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");

@@ -18,6 +18,7 @@ class BucketManager {
    * @summary Creates a new instance of the constructor.
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
+   * @tutorial quickstart-bucket
    * @example
    * import { BucketManager } from "@filebase/sdk";
    * const bucketManager = new BucketManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");

@@ -29,6 +29,7 @@ class PinManager {
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
    * @param {pinManagerOptions} [options] - Optional settings for the constructor.
+   * @tutorial quickstart-pin
    * @example
    * import { PinManager } from "@filebase/sdk";
    * const pinManager = new PinManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD", {
@@ -137,7 +138,7 @@ class PinManager {
    * // Create Pin with Metadata
    * await pinManager.create("my-pin", "QmTJkc7crTuPG7xRmCQSz1yioBpCW3juFBtJPXhQfdCqGF", {
    *   "application": "my-custom-app-on-filebase"
-   * }
+   * });
    */
   async create(key, cid, metadata, options) {
     const encodedToken = this.#getEncodedToken(options?.bucket),

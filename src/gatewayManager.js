@@ -10,6 +10,7 @@ class GatewayManager {
    * @summary Creates a new instance of the constructor.
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
+   * @tutorial quickstart-gateway
    * @example
    * import { GatewayManager } from "@filebase/sdk";
    * const gatewayManager = new GatewayManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");

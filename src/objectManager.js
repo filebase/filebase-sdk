@@ -52,6 +52,7 @@ class ObjectManager {
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
    * @param {objectManagerOptions} options - Optional settings for the constructor.
+   * @tutorial quickstart-object
    * @example
    * import { ObjectManager } from "@filebase/sdk";
    * const objectManager = new ObjectManager("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD", {
