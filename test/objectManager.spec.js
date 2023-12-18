@@ -41,12 +41,7 @@ async function uploadObject(bucket, key, body) {
   await objectManager.upload(key, body);
 
   // Confirm Object Uploaded
-  const objectsList = await objectManager.list({
-      Prefix: key,
-      MaxKeys: 1,
-    }),
-    uploadedObject =
-      objectsList.Contents.length > 0 ? objectsList.Contents[0] : undefined;
+  const uploadedObject = await objectManager.get(key);
 
   return typeof uploadedObject !== "undefined";
 }
@@ -104,15 +99,8 @@ test("delete object", async () => {
     await objectManager.delete(objectNameToCreate);
 
     // List bucket and assert new object doesn't exist
-    const existingObjects = await objectManager.list({
-        Prefix: objectNameToCreate,
-        MaxKeys: 1,
-      }),
-      uploadedObject =
-        existingObjects.Contents.length > 0
-          ? existingObjects.Contents[0]
-          : undefined;
-    assert.equal(typeof uploadedObject, "undefined");
+    const uploadedObject = await objectManager.get(objectNameToCreate);
+    assert.equal(uploadedObject, false);
   } finally {
     await deleteBucket(deleteTestBucket);
   }
@@ -193,6 +181,46 @@ test("download object", async () => {
         process.env.TEST_S3_KEY || process.env.TEST_KEY,
         process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
         { bucket: downloadTestBucket },
+      );
+      const downloadStream = await objectManager.download(objectNameToCreate),
+        downloadFilename = uuidv4(),
+        downloadPath = Path.resolve(os.tmpdir(), downloadFilename),
+        writeFileResult = await writeFile(downloadPath, downloadStream);
+      assert.strictEqual(typeof writeFileResult, "undefined");
+    } finally {
+      await deleteObject(downloadTestBucket, objectNameToCreate);
+    }
+  } finally {
+    await deleteBucket(downloadTestBucket);
+  }
+});
+
+test("download object using gateway", async () => {
+  // Create bucket `download-object-test-pass`
+  const downloadTestBucket = `${TEST_PREFIX}-download-object-test-pass`;
+  await createBucket(downloadTestBucket);
+
+  try {
+    // Upload object `download-object-test`
+    const objectNameToCreate = `download-object-test`;
+    const uploaded = await uploadObject(
+      downloadTestBucket,
+      objectNameToCreate,
+      Buffer.from("download object", "utf-8"),
+    );
+    if (uploaded === false) {
+      throw Error(`Failed to create object [download-object-test]`);
+    }
+
+    try {
+      // Download object `download-object-test` and assert it completes
+      const objectManager = new ObjectManager(
+        process.env.TEST_S3_KEY || process.env.TEST_KEY,
+        process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
+        {
+          bucket: downloadTestBucket,
+          gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
+        },
       );
       const downloadStream = await objectManager.download(objectNameToCreate),
         downloadFilename = uuidv4(),

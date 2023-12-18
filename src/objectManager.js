@@ -98,7 +98,7 @@ class ObjectManager {
    */
 
   /**
-   * @typedef {Object} uploadObjectResult
+   * @typedef {Object} objectHeadResult
    * @property {string} cid The CID of the uploaded object
    * @property {function} download Convenience function to download the object via S3 or the selected gateway
    * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
@@ -119,7 +119,7 @@ class ObjectManager {
    *    and use that as the content of the object to be uploaded.
    * @param {Object} [metadata] Optional metadata for pin object
    * @param {objectOptions} [options] - The options for uploading the object.
-   * @returns {Promise<uploadObjectResult>}
+   * @returns {Promise<objectHeadResult>}
    * @example
    * // Upload Object
    * await objectManager.upload("my-object", Buffer.from("Hello World!"));
@@ -258,20 +258,28 @@ class ObjectManager {
    * @summary Gets an objects info and metadata using the S3 API.
    * @param {string} key - The key of the object to be inspected.
    * @param {objectOptions} [options] - The options for inspecting the object.
-   * @returns {Promise<*>}
+   * @returns {Promise<objectHeadResult|false>}
    */
   async get(key, options) {
-    const command = new HeadObjectCommand({
-        Bucket: options?.bucket || this.#defaultBucket,
-        Key: key,
-      }),
-      response = await this.#client.send(command);
+    const bucket = options?.bucket || this.#defaultBucket;
+    try {
+      const command = new HeadObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+        response = await this.#client.send(command);
 
-    response.Body.download = () => {
-      return this.#routeDownload(response.Body.metadata.CID, key, options);
-    };
+      response.download = () => {
+        return this.#routeDownload(response.Metadata.cid, key, options);
+      };
 
-    return response.Body;
+      return response;
+    } catch (err) {
+      if (err.name === "NotFound") {
+        return false;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -284,13 +292,19 @@ class ObjectManager {
    * await objectManager.download(`download-object-example`);
    */
   async download(key, options) {
-    const command = new GetObjectCommand({
-        Bucket: options?.bucket || this.#defaultBucket,
-        Key: key,
-      }),
-      response = await this.#client.send(command);
+    // Download via IPFS Gateway if Setup or S3 by Default
+    if (typeof this.#gatewayConfiguration.endpoint === "string") {
+      const objectToFetch = await this.get(key, options);
+      return objectToFetch.download();
+    } else {
+      const command = new GetObjectCommand({
+          Bucket: options?.bucket || this.#defaultBucket,
+          Key: key,
+        }),
+        response = await this.#client.send(command);
 
-    return response.Body;
+      return response.Body;
+    }
   }
 
   /**
