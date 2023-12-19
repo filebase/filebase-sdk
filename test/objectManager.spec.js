@@ -306,10 +306,6 @@ test("copy object", async () => {
   await objectManager.copy(objectNameToCreateSrc, bucketDest);
 
   // List bucket and assert new object exists
-  const existingObjects = await objectManager.list({
-      Prefix: objectNameToCreateSrc,
-      MaxKeys: 1,
-    }),
-    copiedObject = existingObjects.length > 0 ? existingObjects[0] : undefined;
-  assert.equal(copiedObject.Name, objectNameToCreateSrc);
+  const copiedObject = await objectManager.get(objectNameToCreateSrc);
+  assert.equal(copiedObject.ETag, '"8605273d870f50fde0d8fbcad4a8f702"');
 });
