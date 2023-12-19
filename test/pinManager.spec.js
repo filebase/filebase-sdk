@@ -5,11 +5,25 @@ import { v4 as uuidv4 } from "uuid";
 import Path from "node:path";
 import os from "node:os";
 import { writeFile } from "node:fs/promises";
+import BucketManager from "../src/bucketManager.js";
 
-const TEST_BUCKET = "pinning-test",
-  TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
+const TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
   TEST_CID_2 = "QmNXcMdXadLRTxLpHJMsGnaeKz26d2F6NgUDVWScp54EfC",
-  TEST_PREFIX = Date.now();
+  TEST_PREFIX = Date.now(),
+  TEST_BUCKET = `${TEST_PREFIX}-pinning-test`;
+
+async function ensureBucketExists(bucketName) {
+  try {
+    // Initialize BucketManager
+    const bucketManager = new BucketManager(
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
+    );
+    await bucketManager.create(bucketName);
+  } catch (err) {
+    console.log(`Bucket Already Exists`);
+  }
+}
 
 test("create pin", async () => {
   const testPinName = `${TEST_PREFIX}-create-pin-test-pass`,
@@ -20,6 +34,7 @@ test("create pin", async () => {
         bucket: TEST_BUCKET,
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
 });
@@ -33,6 +48,7 @@ test("replace pin with name", async () => {
         bucket: TEST_BUCKET,
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   const replacedPin = await pinManager.replace(
@@ -55,6 +71,7 @@ test("replace pin without name", async () => {
         bucket: TEST_BUCKET,
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   const replacedPin = await pinManager.replace(
@@ -74,6 +91,7 @@ test("get pin", async () => {
         bucket: TEST_BUCKET,
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   try {
@@ -97,6 +115,7 @@ test("download pin", async () => {
         },
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   const downloadStream = await pinManager.download(createdPin.pin.cid),
@@ -118,6 +137,7 @@ test("download pin by reference", async () => {
         },
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   const pinToDownload = await pinManager.get(createdPin.requestid),
@@ -136,8 +156,9 @@ test("list pins", async () => {
       {
         bucket: TEST_BUCKET,
       },
-    ),
-    existingPinList = await pinManager.list(),
+    );
+  await ensureBucketExists(TEST_BUCKET);
+  const existingPinList = await pinManager.list(),
     countToCreate = 25;
   let createdPins = [];
   for (let i = 0; i < countToCreate; i++) {
@@ -164,6 +185,7 @@ test("delete pin", async () => {
         bucket: TEST_BUCKET,
       },
     );
+  await ensureBucketExists(TEST_BUCKET);
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
   await pinManager.delete(createdPin.requestid);

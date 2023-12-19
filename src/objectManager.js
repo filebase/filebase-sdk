@@ -76,6 +76,7 @@ class ObjectManager {
         },
         endpoint: clientEndpoint,
         region: this.#DEFAULT_REGION,
+        forcePathStyle: true,
       };
     this.#defaultBucket = options?.bucket;
     this.#maxConcurrentUploads =

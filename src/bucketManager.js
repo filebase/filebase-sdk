@@ -35,6 +35,7 @@ class BucketManager {
         },
         endpoint: clientEndpoint,
         region: this.#DEFAULT_REGION,
+        forcePathStyle: true,
       };
     this.#client = new S3Client(clientConfiguration);
   }
