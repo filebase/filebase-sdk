@@ -93,7 +93,7 @@ class GatewayManager {
       method: "DELETE",
       url: `/${name}`,
       validateStatus: (status) => {
-        return status === 202 || status === 404;
+        return status === 204 || status === 404;
       },
     });
     if (deleteResponse.status === 404) {

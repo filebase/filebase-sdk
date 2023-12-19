@@ -191,7 +191,7 @@ class NameManager {
       method: "DELETE",
       url: `/${label}`,
       validateStatus: (status) => {
-        return status === 202 || status === 404;
+        return status === 204 || status === 404;
       },
     });
     if (deleteResult.status === 404) {

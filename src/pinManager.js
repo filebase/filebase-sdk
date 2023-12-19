@@ -158,11 +158,17 @@ class PinManager {
   }
 
   /**
+   * @typedef {Object} replacePinOptions
+   * @augments pinOptions
+   * @property {Object} [metadata] Optional metadata to set on pin during replacement
+   * @property {string} [name] Optional name for pin to set during replacement
+   */
+
+  /**
    * @summary Replace a pinned object in the selected bucket
    * @param {string} requestid Unique ID for the pinned object
    * @param {string} cid Content Identifier (CID) to be pinned recursively
-   * @param {Object} [metadata] Optional metadata for pin object
-   * @param {pinOptions} [options] Options for pinning the object
+   * @param {replacePinOptions} [options] Options for pinning the object
    * @returns {Promise<pinStatus>}
    * @example
    * // Replace Pin with Metadata
@@ -170,28 +176,37 @@ class PinManager {
    *   "revision": Date.now()
    * }
    */
-  async replace(requestid, cid, metadata, options) {
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      pinStatusResult = await this.#client.request({
-        method: "POST",
-        url: requestid,
-        data: {
-          cid,
-          meta: metadata,
-        },
-        validateStatus: (status) => {
-          return status === 200 || status === 404;
-        },
-        headers: { Authorization: `Bearer ${encodedToken}` },
-      });
-    if (pinStatusResult.status === 404) {
-      throw new Error(`Could not find matching requestid`);
+  async replace(requestid, cid, options) {
+    try {
+      let replaceData = {
+        cid,
+        meta: options?.metadata || {},
+      };
+      if (options?.name) {
+        replaceData.name = options.name;
+      }
+
+      const encodedToken = this.#getEncodedToken(options?.bucket),
+        pinStatusResult = await this.#client.request({
+          method: "POST",
+          url: `/${requestid}`,
+          data: replaceData,
+          validateStatus: (status) => {
+            return status === 200 || status === 404;
+          },
+          headers: { Authorization: `Bearer ${encodedToken}` },
+        });
+      if (pinStatusResult.status === 404) {
+        throw new Error(`Could not find matching requestid`);
+      }
+      const pinStatus = pinStatusResult.data;
+      pinStatus.download = () => {
+        return this.download(pinStatus.pin.cid);
+      };
+      return pinStatus;
+    } catch (err) {
+      throw err;
     }
-    const pinStatus = pinStatusResult;
-    pinStatus.download = () => {
-      return this.download(pinStatus.pin.cid);
-    };
-    return pinStatus;
   }
 
   /**

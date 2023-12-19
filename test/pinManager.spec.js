@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import Path from "node:path";
 import os from "node:os";
 import { writeFile } from "node:fs/promises";
-import pinManager from "../src/pinManager.js";
 
 const TEST_BUCKET = "pinning-test",
   TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
@@ -36,16 +35,15 @@ test("replace pin", async () => {
     );
   const createdPin = await pinManager.create(testPinName, TEST_CID_1);
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
-  try {
-    const replacedPin = await pinManager.replace(
-      createdPin.requestid,
-      TEST_CID_2,
-    );
-    assert.strictEqual(replacedPin.requestid, createdPin.requestid);
-    assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
-  } finally {
-    await pinManager.delete(createdPin.requestid);
-  }
+  const replacedPin = await pinManager.replace(
+    createdPin.requestid,
+    TEST_CID_2,
+    {
+      name: `${testPinName}-replaced`,
+    },
+  );
+  assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
+  await pinManager.delete(replacedPin.requestid);
 });
 
 test("get pin", async () => {
