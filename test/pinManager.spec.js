@@ -59,6 +59,7 @@ test("replace pin with name", async () => {
     },
   );
   assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
+  assert.strictEqual(replacedPin.pin.name, `${testPinName}-replaced`);
   await pinManager.delete(replacedPin.requestid);
 });
 
@@ -78,6 +79,7 @@ test("replace pin without name", async () => {
     createdPin.requestid,
     TEST_CID_2,
   );
+  assert.strictEqual(replacedPin.pin.name, testPinName);
   assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
   await pinManager.delete(replacedPin.requestid);
 });
