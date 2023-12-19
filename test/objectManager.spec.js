@@ -279,7 +279,7 @@ test("list objects", async () => {
 
 test("copy object", async () => {
   // Create bucket `copy-object-test-pass-src`
-  const bucketSrc = `copy-object-test-pass-src`;
+  const bucketSrc = `${TEST_PREFIX}-copy-object-test-pass-src`;
   await createBucket(bucketSrc);
 
   // Upload object `copy-object-test`
@@ -292,7 +292,7 @@ test("copy object", async () => {
   assert.equal(uploaded, true);
 
   // Create bucket `copy-object-test-pass-dest`
-  const bucketDest = `copy-object-test-pass-dest`;
+  const bucketDest = `${TEST_PREFIX}-copy-object-test-pass-dest`;
   await createBucket(bucketDest);
 
   // Initialize ObjectManager
