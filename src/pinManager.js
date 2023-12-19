@@ -177,36 +177,32 @@ class PinManager {
    * }
    */
   async replace(requestid, cid, options) {
-    try {
-      let replaceData = {
-        cid,
-        meta: options?.metadata || {},
-      };
-      if (options?.name) {
-        replaceData.name = options.name;
-      }
-
-      const encodedToken = this.#getEncodedToken(options?.bucket),
-        pinStatusResult = await this.#client.request({
-          method: "POST",
-          url: `/${requestid}`,
-          data: replaceData,
-          validateStatus: (status) => {
-            return status === 200 || status === 404;
-          },
-          headers: { Authorization: `Bearer ${encodedToken}` },
-        });
-      if (pinStatusResult.status === 404) {
-        throw new Error(`Could not find matching requestid`);
-      }
-      const pinStatus = pinStatusResult.data;
-      pinStatus.download = () => {
-        return this.download(pinStatus.pin.cid);
-      };
-      return pinStatus;
-    } catch (err) {
-      throw err;
+    let replaceData = {
+      cid,
+      meta: options?.metadata || {},
+    };
+    if (options?.name) {
+      replaceData.name = options.name;
     }
+
+    const encodedToken = this.#getEncodedToken(options?.bucket),
+      pinStatusResult = await this.#client.request({
+        method: "POST",
+        url: `/${requestid}`,
+        data: replaceData,
+        validateStatus: (status) => {
+          return status === 200 || status === 404;
+        },
+        headers: { Authorization: `Bearer ${encodedToken}` },
+      });
+    if (pinStatusResult.status === 404) {
+      throw new Error(`Could not find matching requestid`);
+    }
+    const pinStatus = pinStatusResult.data;
+    pinStatus.download = () => {
+      return this.download(pinStatus.pin.cid);
+    };
+    return pinStatus;
   }
 
   /**

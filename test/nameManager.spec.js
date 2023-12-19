@@ -113,8 +113,6 @@ test("toggle name on", async () => {
     assert.strictEqual(updatedName.label, testNameLabel);
     assert.strictEqual(updatedName.cid, TEST_CID);
     assert.strictEqual(updatedName.enabled, true);
-  } catch (err) {
-    console.error(err);
   } finally {
     await nameManager.delete(testNameLabel);
   }

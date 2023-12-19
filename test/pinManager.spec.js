@@ -24,7 +24,7 @@ test("create pin", async () => {
   assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
 });
 
-test("replace pin", async () => {
+test("replace pin with name", async () => {
   const testPinName = `${TEST_PREFIX}-replace-pin-test-pass`,
     pinManager = new PinManager(
       process.env.TEST_NAME_KEY || process.env.TEST_KEY,
@@ -41,6 +41,25 @@ test("replace pin", async () => {
     {
       name: `${testPinName}-replaced`,
     },
+  );
+  assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
+  await pinManager.delete(replacedPin.requestid);
+});
+
+test("replace pin without name", async () => {
+  const testPinName = `${TEST_PREFIX}-replace-pin-test-pass`,
+    pinManager = new PinManager(
+      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
+      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
+      {
+        bucket: TEST_BUCKET,
+      },
+    );
+  const createdPin = await pinManager.create(testPinName, TEST_CID_1);
+  assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
+  const replacedPin = await pinManager.replace(
+    createdPin.requestid,
+    TEST_CID_2,
   );
   assert.strictEqual(replacedPin.pin.cid, TEST_CID_2);
   await pinManager.delete(replacedPin.requestid);
