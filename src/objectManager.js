@@ -1,5 +1,6 @@
 // S3 Imports
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -387,6 +388,49 @@ class ObjectManager {
       Bucket: options?.bucket || this.#defaultBucket,
       Key: key,
     });
+
+    await this.#client.send(command);
+    return true;
+  }
+
+  /**
+   * @typedef {Object} copyObjectOptions
+   * @property {string} [sourceBucket] The source bucket from where the object is to be copied.
+   * @property {string} [destinationKey] The key of the object in the destination bucket. By default, it is the same as the sourceKey.
+   */
+
+  /**
+   * If the destinationKey is not provided, the object will be copied with the same key as the sourceKey.
+   *
+   * @summary Copy the object from sourceKey in the sourceBucket to destinationKey in the destinationBucket.
+   * @param {string} sourceKey - The key of the object to be copied from the sourceBucket.
+   * @param {string} destinationBucket - The bucket where the object will be copied to.
+   * @param {copyObjectOptions} [options] - Additional options for the copy operation.
+   *
+   * @returns {Promise<Boolean>} - A Promise that resolves with the result of the copy operation.
+   * @example
+   * // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
+   * // TIP: Set bucket on constructor and it will be used as the default source for copying objects.
+   * await objectManager.copy(`copy-object-test`, `copy-object-dest`, {
+   *   sourceBucket: `copy-object-src`
+   * });
+   */
+  async copy(
+    sourceKey,
+    destinationBucket,
+    options = {
+      sourceBucket: this.#defaultBucket,
+      destinationKey: undefined,
+    },
+  ) {
+    const copySource = `${
+        options?.sourceBucket || this.#defaultBucket
+      }/${sourceKey}`,
+      command = new CopyObjectCommand({
+        CopySource: copySource,
+        Bucket: destinationBucket,
+        Key: options?.destinationKey || sourceKey,
+      });
 
     await this.#client.send(command);
     return true;

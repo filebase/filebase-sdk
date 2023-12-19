@@ -54,6 +54,10 @@ const objectName = `new-object`;
 const uploadedObject = await objectManager.upload(objectName, body);
 // Download Object
 await uploadedObject.download();
+// Copy Object to a New Bucket
+const bucketCopyDestinationName = `copy-dest-bucket`
+await bucketManager.create(bucketCopyDestinationName);
+await objectManager.copy(`new-object`, bucketCopyDestinationName);
 
 // Initialize NameManager
 const nameManager = new NameManager(S3_KEY, S3_SECRET);
