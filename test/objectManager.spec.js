@@ -282,30 +282,45 @@ test("copy object", async () => {
   const bucketSrc = `${TEST_PREFIX}-copy-object-test-pass-src`;
   await createBucket(bucketSrc);
 
-  // Upload object `copy-object-test`
-  const objectNameToCreateSrc = `copy-object-test`;
-  const uploaded = await uploadObject(
-    bucketSrc,
-    objectNameToCreateSrc,
-    Buffer.from("copy object", "utf-8"),
-  );
-  assert.equal(uploaded, true);
+  try {
+    // Upload object `copy-object-test`
+    const objectNameToCreateSrc = `copy-object-test`;
+    const uploaded = await uploadObject(
+      bucketSrc,
+      objectNameToCreateSrc,
+      Buffer.from("copy object", "utf-8"),
+    );
+    try {
+      assert.equal(uploaded, true);
 
-  // Create bucket `copy-object-test-pass-dest`
-  const bucketDest = `${TEST_PREFIX}-copy-object-test-pass-dest`;
-  await createBucket(bucketDest);
+      // Create bucket `copy-object-test-pass-dest`
+      const bucketDest = `${TEST_PREFIX}-copy-object-test-pass-dest`;
+      await createBucket(bucketDest);
 
-  // Initialize ObjectManager
-  const objectManager = new ObjectManager(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    { bucket: bucketSrc },
-  );
+      try {
+        // Initialize ObjectManager
+        const objectManager = new ObjectManager(
+          process.env.TEST_S3_KEY || process.env.TEST_KEY,
+          process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
+          { bucket: bucketSrc },
+        );
 
-  // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
-  await objectManager.copy(objectNameToCreateSrc, bucketDest);
-
-  // List bucket and assert new object exists
-  const copiedObject = await objectManager.get(objectNameToCreateSrc);
-  assert.equal(copiedObject.ETag, '"8605273d870f50fde0d8fbcad4a8f702"');
+        // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
+        await objectManager.copy(objectNameToCreateSrc, bucketDest);
+        try {
+          // List bucket and assert new object exists
+          const copiedObject = await objectManager.get(objectNameToCreateSrc);
+          assert.equal(copiedObject.ETag, '"8605273d870f50fde0d8fbcad4a8f702"');
+        } finally {
+          await deleteObject(bucketDest, objectNameToCreateSrc);
+        }
+      } finally {
+        await deleteBucket(bucketDest);
+      }
+    } finally {
+      await deleteObject(bucketSrc, objectNameToCreateSrc);
+    }
+  } finally {
+    await deleteBucket(bucketSrc);
+  }
 });
