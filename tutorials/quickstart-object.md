@@ -1,7 +1,7 @@
 **node.js**
 ````js
 // Import Classes
-import {ObjectManager} from 'filebase-sdk'
+import {ObjectManager} from 'filebase-sdk';
 
 // Initialize ObjectManager
 const bucketName = `create-object-[random string]`;

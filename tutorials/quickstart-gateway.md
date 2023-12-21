@@ -1,5 +1,8 @@
 **node.js**
 ````js
+// Import Classes
+import {GatewayManager} from 'filebase-sdk';
+
 // Initialize GatewayManager
 const gatewayManager = new GatewayManager(S3_KEY, S3_SECRET);
 

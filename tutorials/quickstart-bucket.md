@@ -1,7 +1,7 @@
 **node.js**
 ````js
 // Import Classes
-import {BucketManager} from 'filebase-sdk'
+import {BucketManager} from 'filebase-sdk';
 
 // Initialize BucketManager
 const bucketManager = new BucketManager(S3_KEY, S3_SECRET);

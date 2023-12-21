@@ -1,5 +1,8 @@
 **node.js**
 ````js
+// Import Classes
+import {PinManager} from 'filebase-sdk';
+
 // Initialize PinManager
 const pinManager = new PinManager(S3_KEY, S3_SECRET, {
     bucket: bucketName,
