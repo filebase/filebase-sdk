@@ -1,5 +1,5 @@
 import axios from "axios";
-import { downloadFromGateway } from "./helpers.js";
+import { apiErrorHandler, downloadFromGateway } from "./helpers.js";
 
 /** Provides methods for managing pins in an REST endpoint. */
 class PinManager {
@@ -113,18 +113,22 @@ class PinManager {
    * });
    */
   async list(listOptions, options) {
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      getResponse = await this.#client.request({
-        method: "GET",
-        params: listOptions,
-        headers: { Authorization: `Bearer ${encodedToken}` },
-      });
-    for (let pinStatus of getResponse.data.results) {
-      pinStatus.download = () => {
-        return this.download(pinStatus.pin.cid);
-      };
+    try {
+      const encodedToken = this.#getEncodedToken(options?.bucket),
+        getResponse = await this.#client.request({
+          method: "GET",
+          params: listOptions,
+          headers: { Authorization: `Bearer ${encodedToken}` },
+        });
+      for (let pinStatus of getResponse.data.results) {
+        pinStatus.download = () => {
+          return this.download(pinStatus.pin.cid);
+        };
+      }
+      return getResponse.data;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    return getResponse.data;
   }
 
   /**
@@ -141,20 +145,24 @@ class PinManager {
    * });
    */
   async create(key, cid, metadata, options) {
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      pinStatus = await this.#client.request({
-        method: "POST",
-        data: {
-          cid,
-          name: key,
-          meta: metadata,
-        },
-        headers: { Authorization: `Bearer ${encodedToken}` },
-      });
-    pinStatus.data.download = () => {
-      return this.download(pinStatus.data.pin.cid);
-    };
-    return pinStatus.data;
+    try {
+      const encodedToken = this.#getEncodedToken(options?.bucket),
+        pinStatus = await this.#client.request({
+          method: "POST",
+          data: {
+            cid,
+            name: key,
+            meta: metadata,
+          },
+          headers: { Authorization: `Bearer ${encodedToken}` },
+        });
+      pinStatus.data.download = () => {
+        return this.download(pinStatus.data.pin.cid);
+      };
+      return pinStatus.data;
+    } catch (err) {
+      apiErrorHandler(err);
+    }
   }
 
   /**
@@ -177,32 +185,33 @@ class PinManager {
    * }
    */
   async replace(requestid, cid, options) {
-    let replaceData = {
-      cid,
-      meta: options?.metadata || {},
-    };
-    if (options?.name) {
-      replaceData.name = options.name;
-    }
+    try {
+      let replaceData = {
+        cid,
+        meta: options?.metadata || {},
+      };
+      if (options?.name) {
+        replaceData.name = options.name;
+      }
 
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      pinStatusResult = await this.#client.request({
-        method: "POST",
-        url: `/${requestid}`,
-        data: replaceData,
-        validateStatus: (status) => {
-          return status === 200 || status === 404;
-        },
-        headers: { Authorization: `Bearer ${encodedToken}` },
-      });
-    if (pinStatusResult.status === 404) {
-      throw new Error(`Could not find matching requestid`);
+      const encodedToken = this.#getEncodedToken(options?.bucket),
+        pinStatusResult = await this.#client.request({
+          method: "POST",
+          url: `/${requestid}`,
+          data: replaceData,
+          validateStatus: (status) => {
+            return status === 200;
+          },
+          headers: { Authorization: `Bearer ${encodedToken}` },
+        });
+      const pinStatus = pinStatusResult.data;
+      pinStatus.download = () => {
+        return this.download(pinStatus.pin.cid);
+      };
+      return pinStatus;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    const pinStatus = pinStatusResult.data;
-    pinStatus.download = () => {
-      return this.download(pinStatus.pin.cid);
-    };
-    return pinStatus;
   }
 
   /**
@@ -229,23 +238,27 @@ class PinManager {
    * await pinManager.get("qr4231214");
    */
   async get(requestid, options) {
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      getResponseResult = await this.#client.request({
-        method: "GET",
-        url: `/${requestid}`,
-        headers: { Authorization: `Bearer ${encodedToken}` },
-        validateStatus: (status) => {
-          return status === 200 || status === 404;
-        },
-      });
-    if (getResponseResult.status === 404) {
-      return false;
+    try {
+      const encodedToken = this.#getEncodedToken(options?.bucket),
+        getResponseResult = await this.#client.request({
+          method: "GET",
+          url: `/${requestid}`,
+          headers: { Authorization: `Bearer ${encodedToken}` },
+          validateStatus: (status) => {
+            return status === 200 || status === 404;
+          },
+        });
+      if (getResponseResult.status === 404) {
+        return false;
+      }
+      const pinStatus = getResponseResult.data;
+      pinStatus.download = () => {
+        return this.download(pinStatus.pin.cid);
+      };
+      return pinStatus;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    const pinStatus = getResponseResult.data;
-    pinStatus.download = () => {
-      return this.download(pinStatus.pin.cid);
-    };
-    return pinStatus;
   }
 
   /**
@@ -258,19 +271,20 @@ class PinManager {
    * await pinManager.delete("qr4231213");
    */
   async delete(requestid, options) {
-    const encodedToken = this.#getEncodedToken(options?.bucket),
-      deleteResponse = await this.#client.request({
+    try {
+      const encodedToken = this.#getEncodedToken(options?.bucket);
+      await this.#client.request({
         method: "DELETE",
         url: `/${requestid}`,
         headers: { Authorization: `Bearer ${encodedToken}` },
         validateStatus: (status) => {
-          return status === 202 || status === 404;
+          return status === 202;
         },
       });
-    if (deleteResponse.status === 404) {
-      throw new Error(`Could not find matching requestid`);
+      return true;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    return true;
   }
 
   #getEncodedToken(bucket) {

@@ -23,4 +23,20 @@ async function downloadFromGateway(cid, options) {
   return downloadResponse.data;
 }
 
-export { downloadFromGateway };
+function apiErrorHandler(err) {
+  if (
+    err?.response &&
+    err?.response?.status &&
+    (err.response.status.toString()[0] === "4" ||
+      err.response.status.toString()[0] === "5")
+  ) {
+    throw new Error(
+      err.response.data.error?.details ||
+        err.response.data.error?.reason ||
+        err,
+    );
+  }
+  throw err;
+}
+
+export { downloadFromGateway, apiErrorHandler };

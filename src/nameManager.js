@@ -1,4 +1,5 @@
 import axios from "axios";
+import { apiErrorHandler } from "./helpers.js";
 
 /** Provides methods for managing names in an REST endpoint. */
 class NameManager {
@@ -66,15 +67,19 @@ class NameManager {
       enabled: true,
     },
   ) {
-    const createResponse = await this.#client.request({
-      method: "POST",
-      data: {
-        label,
-        cid,
-        enabled: options?.enabled !== false,
-      },
-    });
-    return createResponse.data;
+    try {
+      const createResponse = await this.#client.request({
+        method: "POST",
+        data: {
+          label,
+          cid,
+          enabled: options?.enabled !== false,
+        },
+      });
+      return createResponse.data;
+    } catch (err) {
+      apiErrorHandler(err);
+    }
   }
 
   /**
@@ -101,16 +106,20 @@ class NameManager {
       enabled: true,
     },
   ) {
-    const importResponse = await this.#client.request({
-      method: "POST",
-      data: {
-        label,
-        cid,
-        network_private_key: privateKey,
-        enabled: options?.enabled !== false,
-      },
-    });
-    return importResponse.data;
+    try {
+      const importResponse = await this.#client.request({
+        method: "POST",
+        data: {
+          label,
+          cid,
+          network_private_key: privateKey,
+          enabled: options?.enabled !== false,
+        },
+      });
+      return importResponse.data;
+    } catch (err) {
+      apiErrorHandler(err);
+    }
   }
 
   /**
@@ -125,24 +134,25 @@ class NameManager {
    * await nameManager.update(`update-name-example`, `bafybeidt4nmaci476lyon2mvgfmwyzysdazienhxs2bqnfpdainzjuwjom`);
    */
   async update(label, cid, options = {}) {
-    const updateOptions = {
-      cid,
-    };
-    if (options?.enabled) {
-      updateOptions.enabled = Boolean(options.enabled);
+    try {
+      const updateOptions = {
+        cid,
+      };
+      if (options?.enabled) {
+        updateOptions.enabled = Boolean(options.enabled);
+      }
+      await this.#client.request({
+        method: "PUT",
+        url: `/${label}`,
+        data: updateOptions,
+        validateStatus: (status) => {
+          return status === 200;
+        },
+      });
+      return true;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    const updateResult = await this.#client.request({
-      method: "PUT",
-      url: `/${label}`,
-      data: updateOptions,
-      validateStatus: (status) => {
-        return status === 200 || status === 404;
-      },
-    });
-    if (updateResult.status === 404) {
-      throw new Error(`Could not find matching label for name`);
-    }
-    return true;
   }
 
   /**
@@ -154,14 +164,18 @@ class NameManager {
    * await nameManager.get(`list-name-example`);
    */
   async get(label) {
-    const getResponse = await this.#client.request({
-      method: "GET",
-      url: `/${label}`,
-      validateStatus: (status) => {
-        return status === 200 || status === 404;
-      },
-    });
-    return getResponse.status === 200 ? getResponse.data : false;
+    try {
+      const getResponse = await this.#client.request({
+        method: "GET",
+        url: `/${label}`,
+        validateStatus: (status) => {
+          return status === 200 || status === 404;
+        },
+      });
+      return getResponse.status === 200 ? getResponse.data : false;
+    } catch (err) {
+      apiErrorHandler(err);
+    }
   }
 
   /**
@@ -172,10 +186,14 @@ class NameManager {
    * await nameManager.list();
    */
   async list() {
-    const listResponse = await this.#client.request({
-      method: "GET",
-    });
-    return listResponse.data;
+    try {
+      const listResponse = await this.#client.request({
+        method: "GET",
+      });
+      return listResponse.data;
+    } catch (err) {
+      apiErrorHandler(err);
+    }
   }
 
   /**
@@ -187,17 +205,18 @@ class NameManager {
    * await nameManager.delete(`delete-name-example`);
    */
   async delete(label) {
-    const deleteResult = await this.#client.request({
-      method: "DELETE",
-      url: `/${label}`,
-      validateStatus: (status) => {
-        return status === 204 || status === 404;
-      },
-    });
-    if (deleteResult.status === 404) {
-      throw new Error(`Could not find matching label for name`);
+    try {
+      await this.#client.request({
+        method: "DELETE",
+        url: `/${label}`,
+        validateStatus: (status) => {
+          return status === 204;
+        },
+      });
+      return true;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    return true;
   }
 
   /**
@@ -211,20 +230,21 @@ class NameManager {
    * await nameManager.toggle(`toggle-name-example`, false); // Disabled
    */
   async toggle(label, targetState) {
-    const toggleResponse = await this.#client.request({
-      method: "PUT",
-      url: `/${label}`,
-      data: {
-        enabled: targetState,
-      },
-      validateStatus: (status) => {
-        return status === 200 || status === 404;
-      },
-    });
-    if (toggleResponse.status === 404) {
-      throw new Error(`Could not find matching label for name`);
+    try {
+      await this.#client.request({
+        method: "PUT",
+        url: `/${label}`,
+        data: {
+          enabled: targetState,
+        },
+        validateStatus: (status) => {
+          return status === 200;
+        },
+      });
+      return true;
+    } catch (err) {
+      apiErrorHandler(err);
     }
-    return true;
   }
 }
 
