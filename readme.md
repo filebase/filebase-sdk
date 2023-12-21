@@ -37,7 +37,13 @@ To use the library in your project, use npm or yarn to install the [`@filebase/s
 **node.js**
 ````js
 // Import Classes
-import {BucketManager, ObjectManager, NameManager, GatewayManager, PinManager} from 'filebase-sdk'
+import {
+  BucketManager, 
+  ObjectManager, 
+  NameManager, 
+  GatewayManager, 
+  PinManager
+} from 'filebase-sdk'
 
 // Initialize BucketManager
 const bucketManager = new BucketManager(S3_KEY, S3_SECRET);
