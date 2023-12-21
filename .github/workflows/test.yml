@@ -18,5 +18,5 @@ jobs:
           TEST_KEY: ${{ secrets.TEST_S3_KEY }}
           TEST_SECRET: ${{ secrets.TEST_S3_SECRET }}
           TEST_IPFS_GATEWAY: ${{ vars.TEST_IPFS_GATEWAY }}
-          TEST_IPNS_CID: ${{ vars.TEST_IPNS_CID }}
           TEST_IPNS_PRIVATE_KEY: ${{ secrets.TEST_IPNS_PRIVATE_KEY }}
+          TEST_NAME_CID: ${{ vars.TEST_NAME_CID }}
