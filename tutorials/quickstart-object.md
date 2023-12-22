@@ -1,11 +1,13 @@
 **node.js**
 ````js
 // Import Classes
-import {ObjectManager} from 'filebase-sdk';
+import {ObjectManager} from '@filebase/sdk';
 
 // Initialize ObjectManager
 const bucketName = `create-object-[random string]`;
-const objectManager = new ObjectManager(S3_KEY, S3_SECRET, bucketName);
+const objectManager = new ObjectManager(S3_KEY, S3_SECRET, {
+ bucket: bucketName
+});
 
 // Upload Object
 const objectName = `new-object`;

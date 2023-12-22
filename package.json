@@ -1,8 +1,11 @@
 {
   "name": "@filebase/sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SDK for Interacting with Filebase Services [S3(Buckets, Objects), IPFS(Gateways, Pins) IPNS(Names)]",
-  "repository": "https://github.com/filebase/filebase-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filebase/filebase-sdk.git"
+  },
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
@@ -14,7 +17,16 @@
     "test": "node --test",
     "doc": "jsdoc -c jsdoc.json"
   },
-  "keywords": ["filebase", "filebase-sdk", "s3", "ipfs", "ipns", "sdk", "web3", "distributed"],
+  "keywords": [
+    "filebase",
+    "filebase-sdk",
+    "s3",
+    "ipfs",
+    "ipns",
+    "sdk",
+    "web3",
+    "distributed"
+  ],
   "devDependencies": {
     "clean-jsdoc-theme": "4.2.17",
     "jsdoc": "4.0.2",

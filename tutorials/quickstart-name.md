@@ -1,7 +1,7 @@
 **node.js**
 ````js
 // Import Classes
-import {NameManager} from 'filebase-sdk';
+import {NameManager} from '@filebase/sdk';
 
 // Initialize NameManager
 const nameManager = new NameManager(S3_KEY, S3_SECRET);
