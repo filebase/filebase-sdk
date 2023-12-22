@@ -43,7 +43,7 @@ import {
   NameManager, 
   GatewayManager, 
   PinManager
-} from 'filebase-sdk'
+} from '@filebase/sdk'
 
 // Initialize BucketManager
 const bucketManager = new BucketManager(S3_KEY, S3_SECRET);
