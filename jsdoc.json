@@ -1,0 +1,35 @@
+{
+  "source": {
+    "include": ["src"],
+    "includePattern": ".js$",
+    "excludePattern": "(node_modules/|docs)"
+  },
+  "plugins": ["plugins/markdown", "plugins/summarize"],
+  "templates": {
+    "referenceTitle": "Filebase SDK",
+    "cleverLinks": true
+  },
+  "opts": {
+    "template": "node_modules/clean-jsdoc-theme",
+    "recurse": true,
+    "tutorials": "./tutorials",
+    "destination": "./documentation/",
+    "readme": "./readme.md",
+    "theme_opts": {
+      "title": "Filebase SDK",
+      "homepageTitle": "Filebase SDK",
+      "favicon": "https://console.filebase.com/favicon.ico",
+      "default_theme": "fallback-dark",
+      "sort": false,
+      "menu": [{
+        "title": "Github",
+        "link": "https://github.com/filebase/filebase-sdk",
+        "target": "_blank"
+      },{
+        "title": "npm",
+        "link": "https://www.npmjs.com/package/@filebase/sdk",
+        "target": "_blank"
+      }]
+    }
+  }
+}

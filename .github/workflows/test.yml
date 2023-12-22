@@ -1,0 +1,22 @@
+name: Build SDK and Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+      - run: npm ci
+      - run: node --test --test-concurrency 1
+        env:
+          TEST_KEY: ${{ secrets.TEST_S3_KEY }}
+          TEST_SECRET: ${{ secrets.TEST_S3_SECRET }}
+          TEST_IPFS_GATEWAY: ${{ vars.TEST_IPFS_GATEWAY }}
+          TEST_IPNS_PRIVATE_KEY: ${{ secrets.TEST_IPNS_PRIVATE_KEY }}
+          TEST_NAME_CID: ${{ vars.TEST_NAME_CID }}
