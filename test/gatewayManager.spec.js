@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import GatewayManager from "../src/gatewayManager.js";
+import { GatewayManager } from "../dist/index.mjs";
 
 const TEST_PREFIX = Date.now();
 

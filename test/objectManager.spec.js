@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import ObjectManager from "../src/objectManager.js";
-import BucketManager from "../src/bucketManager.js";
+import { ObjectManager, BucketManager } from "../dist/index.mjs";
 import * as Path from "node:path";
 import { writeFile } from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
