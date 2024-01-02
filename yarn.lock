@@ -913,20 +913,6 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.19.10.tgz#bd123a74f243d2f3a1f046447bb9b363ee25d072"
   integrity sha512-whqLG6Sc70AbU73fFYvuYzaE4MNMBIlR1Y/IrUeOXFrWHxBEjjbZaQ3IXIQS8wJdAzue2GwYZCjOrgrU1oUHoA==
 
-"@filebase/sdk@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@filebase/sdk/-/sdk-1.0.1.tgz#22e0c0b5031a70e081e2ce2ee51aefaf8150712e"
-  integrity sha512-g8PrerAm/E7Cz8XSc/W66HDdC5oitK7Bu9fgMxGY3YejhPOaA61BCA/V9xCHzpRjrNQn6Ak4/SOr3/Q1k8uWmA==
-  dependencies:
-    "@aws-sdk/client-s3" "3.478.0"
-    "@aws-sdk/lib-storage" "3.478.0"
-    "@helia/car" "1.0.4"
-    "@helia/unixfs" "1.4.3"
-    "@ipld/car" "5.2.4"
-    axios "1.6.2"
-    blockstore-fs "1.1.8"
-    uuid "9.0.1"
-
 "@helia/car@1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@helia/car/-/car-1.0.4.tgz#31f881faa0fdd1cf2aba4429bd4c76331dffe4d1"
