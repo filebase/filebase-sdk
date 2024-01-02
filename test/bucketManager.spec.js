@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import BucketManager from "../src/bucketManager.js";
-import GatewayManager from "../src/gatewayManager.js";
+import { BucketManager } from "../dist/index.mjs";
 
 const TEST_PREFIX = Date.now();
 

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import Path from "node:path";
 import os from "node:os";
 import { writeFile } from "node:fs/promises";
-import BucketManager from "../src/bucketManager.js";
+import { BucketManager } from "../dist/index.mjs";
 
 const TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
   TEST_CID_2 = "QmNXcMdXadLRTxLpHJMsGnaeKz26d2F6NgUDVWScp54EfC",
