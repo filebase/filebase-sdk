@@ -6,6 +6,6 @@ export default defineConfig({
   sourcemap: false,
   noExternal: ['@ipld/car', '@helia/car', '@helia/unixfs', 'blockstore-fs'],
   dts: true,
-  format: ['cjs', 'esm'],
+  format: ['cjs'],
   clean: true,
 })

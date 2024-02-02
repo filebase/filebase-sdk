@@ -13,16 +13,20 @@
   "exports": {
     ".": {
       "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
+      "import": "./src/index.mjs",
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "build": "tsup src/index.js --format cjs,esm --dts --clean",
+    "build": "tsup src/index.js --format cjs --dts --clean",
     "test": "node --test",
     "doc": "jsdoc -c jsdoc.json"
   },
