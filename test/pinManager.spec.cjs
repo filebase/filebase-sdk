@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { BucketManager, PinManager } = require("../dist/index.js");
 const Path = require("node:path");
 const { writeFile } = require("node:fs/promises");
-const { v4: uuidv4 } = require("node:uuid");
+const { v4: uuidv4 } = require("uuid");
 const os = require("node:os");
 
 const TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
