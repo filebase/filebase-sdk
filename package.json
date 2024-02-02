@@ -1,6 +1,6 @@
 {
   "name": "@filebase/sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "SDK for Interacting with Filebase Services [S3(Buckets, Objects), IPFS(Gateways, Pins) IPNS(Names)]",
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
     "clean-jsdoc-theme": "4.2.17",
     "jsdoc": "4.0.2",
     "prettier": "3.1.0",
-    "tsup": "^8.0.1",
+    "tsup": "8.0.1",
     "typescript": "5.3.3"
   },
   "dependencies": {
