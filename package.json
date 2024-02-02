@@ -7,22 +7,22 @@
     "url": "git+https://github.com/filebase/filebase-sdk.git"
   },
   "license": "MIT",
-  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "require": "./dist/index.js",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.ts"
     }
   },
-  "files": [
-    "dist"
-  ],
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "build": "unbuild",
+    "build": "tsup src/index.js --format cjs,esm --dts --clean",
     "test": "node --test",
     "doc": "jsdoc -c jsdoc.json"
   },
@@ -40,8 +40,8 @@
     "clean-jsdoc-theme": "4.2.17",
     "jsdoc": "4.0.2",
     "prettier": "3.1.0",
-    "typescript": "5.3.3",
-    "unbuild": "2.0.0"
+    "tsup": "^8.0.1",
+    "typescript": "5.3.3"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.478.0",
