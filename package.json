@@ -8,12 +8,12 @@
   },
   "license": "MIT",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "module": "./src/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "require": "./dist/index.js",
-      "import": "./src/index.mjs",
+      "import": "./src/index.js",
       "types": "./dist/index.d.ts"
     }
   },
