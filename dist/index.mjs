@@ -1374,12 +1374,12 @@ var require_loader = __commonJS({
 var require_rabin_wasm_node = __commonJS({
   "node_modules/rabin-wasm/dist/rabin-wasm.node.js"(exports, module) {
     var { instantiateSync } = require_loader();
-    var fs4 = __require("fs");
+    var fs6 = __require("fs");
     loadWebAssembly.supported = typeof WebAssembly !== "undefined";
     async function loadWebAssembly(imp = {}) {
       if (!loadWebAssembly.supported)
         return null;
-      return instantiateSync(fs4.readFileSync(__dirname + "/../dist/rabin.wasm"), imp);
+      return instantiateSync(fs6.readFileSync(__dirname + "/../dist/rabin.wasm"), imp);
     }
     module.exports = loadWebAssembly;
   }
@@ -1680,11 +1680,11 @@ var require_common = __commonJS({
         let enableOverride = null;
         let namespacesCache;
         let enabledCache;
-        function debug2(...args) {
-          if (!debug2.enabled) {
+        function debug3(...args) {
+          if (!debug3.enabled) {
             return;
           }
-          const self = debug2;
+          const self = debug3;
           const curr = Number(/* @__PURE__ */ new Date());
           const ms = curr - (prevTime || curr);
           self.diff = ms;
@@ -1714,12 +1714,12 @@ var require_common = __commonJS({
           const logFn = self.log || createDebug.log;
           logFn.apply(self, args);
         }
-        debug2.namespace = namespace;
-        debug2.useColors = createDebug.useColors();
-        debug2.color = createDebug.selectColor(namespace);
-        debug2.extend = extend;
-        debug2.destroy = createDebug.destroy;
-        Object.defineProperty(debug2, "enabled", {
+        debug3.namespace = namespace;
+        debug3.useColors = createDebug.useColors();
+        debug3.color = createDebug.selectColor(namespace);
+        debug3.extend = extend;
+        debug3.destroy = createDebug.destroy;
+        Object.defineProperty(debug3, "enabled", {
           enumerable: true,
           configurable: false,
           get: () => {
@@ -1737,9 +1737,9 @@ var require_common = __commonJS({
           }
         });
         if (typeof createDebug.init === "function") {
-          createDebug.init(debug2);
+          createDebug.init(debug3);
         }
-        return debug2;
+        return debug3;
       }
       function extend(namespace, delimiter) {
         const newDebug = createDebug(this.namespace + (typeof delimiter === "undefined" ? ":" : delimiter) + namespace);
@@ -1986,7 +1986,7 @@ var require_node = __commonJS({
     var tty = __require("tty");
     var util = __require("util");
     exports.init = init;
-    exports.log = log11;
+    exports.log = log12;
     exports.formatArgs = formatArgs;
     exports.save = save;
     exports.load = load;
@@ -2121,7 +2121,7 @@ var require_node = __commonJS({
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
-    function log11(...args) {
+    function log12(...args) {
       return process.stderr.write(util.format(...args) + "\n");
     }
     function save(namespaces) {
@@ -2134,11 +2134,11 @@ var require_node = __commonJS({
     function load() {
       return process.env.DEBUG;
     }
-    function init(debug2) {
-      debug2.inspectOpts = {};
+    function init(debug3) {
+      debug3.inspectOpts = {};
       const keys = Object.keys(exports.inspectOpts);
       for (let i = 0; i < keys.length; i++) {
-        debug2.inspectOpts[keys[i]] = exports.inspectOpts[keys[i]];
+        debug3.inspectOpts[keys[i]] = exports.inspectOpts[keys[i]];
       }
     }
     module.exports = require_common()(exports);
@@ -2373,6 +2373,78 @@ var require_brace_expansion = __commonJS({
       }
       return expansions;
     }
+  }
+});
+
+// node_modules/fast-write-atomic/index.js
+var require_fast_write_atomic = __commonJS({
+  "node_modules/fast-write-atomic/index.js"(exports, module) {
+    "use strict";
+    var { open, write: write2, close, rename, fsync, unlink } = __require("fs");
+    var { join, dirname } = __require("path");
+    var counter = 0;
+    function cleanup(dest, err, cb) {
+      unlink(dest, function() {
+        cb(err);
+      });
+    }
+    function closeAndCleanup(fd, dest, err, cb) {
+      close(fd, cleanup.bind(null, dest, err, cb));
+    }
+    function writeLoop(fd, content, contentLength, offset, cb) {
+      write2(fd, content, offset, function(err, bytesWritten) {
+        if (err) {
+          cb(err);
+          return;
+        }
+        return bytesWritten < contentLength - offset ? writeLoop(fd, content, contentLength, offset + bytesWritten, cb) : cb(null);
+      });
+    }
+    function openLoop(dest, cb) {
+      open(dest, "w", function(err, fd) {
+        if (err) {
+          return err.code === "EMFILE" ? openLoop(dest, cb) : cb(err);
+        }
+        cb(null, fd);
+      });
+    }
+    function writeAtomic2(path6, content, cb) {
+      const tmp = join(dirname(path6), "." + process.pid + "." + counter++);
+      openLoop(tmp, function(err, fd) {
+        if (err) {
+          cb(err);
+          return;
+        }
+        const contentLength = Buffer.byteLength(content);
+        writeLoop(fd, content, contentLength, 0, function(err2) {
+          if (err2) {
+            closeAndCleanup(fd, tmp, err2, cb);
+            return;
+          }
+          fsync(fd, function(err3) {
+            if (err3) {
+              closeAndCleanup(fd, tmp, err3, cb);
+              return;
+            }
+            close(fd, function(err4) {
+              if (err4) {
+                cleanup(tmp, err4, cb);
+                return;
+              }
+              rename(tmp, path6, (err5) => {
+                if (err5) {
+                  cleanup(tmp, err5, cb);
+                  return;
+                }
+                cb(null);
+              });
+            });
+          });
+        });
+        content = null;
+      });
+    }
+    module.exports = writeAtomic2;
   }
 });
 
@@ -11746,10 +11818,10 @@ var dirBuilder = async (dir, blockstore, options) => {
   });
   const block = encode7(prepare({ Data: unixfs2.marshal() }));
   const cid = await persist(block, blockstore, options);
-  const path3 = dir.path;
+  const path6 = dir.path;
   return {
     cid,
-    path: path3,
+    path: path6,
     unixfs: unixfs2,
     size: BigInt(block.length),
     originalPath: dir.originalPath,
@@ -11913,7 +11985,7 @@ function defaultDagBuilder(options) {
       let originalPath;
       if (entry.path != null) {
         originalPath = entry.path;
-        entry.path = entry.path.split("/").filter((path3) => path3 != null && path3 !== ".").join("/");
+        entry.path = entry.path.split("/").filter((path6) => path6 != null && path6 !== ".").join("/");
       }
       if (isFileCandidate(entry)) {
         const file = {
@@ -12708,8 +12780,8 @@ async function convertToShard(oldDir, options) {
 }
 
 // node_modules/ipfs-unixfs-importer/dist/src/utils/to-path-components.js
-var toPathComponents = (path3 = "") => {
-  return path3.split(/(?<!\\)\//).filter(Boolean);
+var toPathComponents = (path6 = "") => {
+  return path6.split(/(?<!\\)\//).filter(Boolean);
 };
 
 // node_modules/ipfs-unixfs-importer/dist/src/tree-builder.js
@@ -12961,11 +13033,11 @@ var import_err_code14 = __toESM(require_err_code(), 1);
 
 // node_modules/ipfs-unixfs-exporter/dist/src/resolvers/dag-cbor.js
 var import_err_code6 = __toESM(require_err_code(), 1);
-var resolve = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, options) => {
+var resolve = async (cid, name4, path6, toResolve, resolve6, depth, blockstore, options) => {
   const block = await blockstore.get(cid, options);
   const object = decode6(block);
   let subObject = object;
-  let subPath = path3;
+  let subPath = path6;
   while (toResolve.length > 0) {
     const prop = toResolve[0];
     if (prop in subObject) {
@@ -12977,7 +13049,7 @@ var resolve = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, 
           entry: {
             type: "object",
             name: name4,
-            path: path3,
+            path: path6,
             cid,
             node: block,
             depth,
@@ -13003,7 +13075,7 @@ var resolve = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, 
     entry: {
       type: "object",
       name: name4,
-      path: path3,
+      path: path6,
       cid,
       node: block,
       depth,
@@ -13082,16 +13154,16 @@ var rawContent = (node) => {
   }
   return contentGenerator;
 };
-var resolve2 = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, options) => {
+var resolve2 = async (cid, name4, path6, toResolve, resolve6, depth, blockstore, options) => {
   if (toResolve.length > 0) {
-    throw (0, import_err_code8.default)(new Error(`No link named ${path3} found in raw node ${cid}`), "ERR_NOT_FOUND");
+    throw (0, import_err_code8.default)(new Error(`No link named ${path6} found in raw node ${cid}`), "ERR_NOT_FOUND");
   }
   const buf2 = decode10(cid.multihash.bytes);
   return {
     entry: {
       type: "identity",
       name: name4,
-      path: path3,
+      path: path6,
       cid,
       content: rawContent(buf2.digest),
       depth,
@@ -13118,16 +13190,16 @@ var rawContent2 = (node) => {
   }
   return contentGenerator;
 };
-var resolve3 = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, options) => {
+var resolve3 = async (cid, name4, path6, toResolve, resolve6, depth, blockstore, options) => {
   if (toResolve.length > 0) {
-    throw (0, import_err_code9.default)(new Error(`No link named ${path3} found in raw node ${cid}`), "ERR_NOT_FOUND");
+    throw (0, import_err_code9.default)(new Error(`No link named ${path6} found in raw node ${cid}`), "ERR_NOT_FOUND");
   }
   const block = await blockstore.get(cid, options);
   return {
     entry: {
       type: "raw",
       name: name4,
-      path: path3,
+      path: path6,
       cid,
       content: rawContent2(block),
       depth,
@@ -13168,13 +13240,13 @@ var toPrefix = (position, padLength) => {
 };
 var toBucketPath = (position) => {
   let bucket = position.bucket;
-  const path3 = [];
+  const path6 = [];
   while (bucket._parent != null) {
-    path3.push(bucket);
+    path6.push(bucket);
     bucket = bucket._parent;
   }
-  path3.push(bucket);
-  return path3.reverse();
+  path6.push(bucket);
+  return path6.reverse();
 };
 var findShardCid = async (node, name4, blockstore, context, options) => {
   if (context == null) {
@@ -13786,7 +13858,7 @@ var duplexPipelineFn = (duplex) => {
 };
 
 // node_modules/ipfs-unixfs-exporter/dist/src/resolvers/unixfs-v1/content/directory.js
-var directoryContent = (cid, node, unixfs2, path3, resolve6, depth, blockstore) => {
+var directoryContent = (cid, node, unixfs2, path6, resolve6, depth, blockstore) => {
   async function* yieldDirectoryContent(options = {}) {
     var _a;
     const offset = options.offset ?? 0;
@@ -13798,7 +13870,7 @@ var directoryContent = (cid, node, unixfs2, path3, resolve6, depth, blockstore) 
     yield* pipe(links, (source) => src_default3(source, (link) => {
       return async () => {
         const linkName = link.Name ?? "";
-        const linkPath = `${path3}/${linkName}`;
+        const linkPath = `${path6}/${linkName}`;
         const result = await resolve6(link.Hash, linkName, linkPath, [], depth + 1, blockstore, options);
         return result.entry;
       };
@@ -13896,7 +13968,7 @@ async function walkDAG(blockstore, node, queue, streamPosition, start, end, opti
     queue.end();
   }
 }
-var fileContent = (cid, node, unixfs2, path3, resolve6, depth, blockstore) => {
+var fileContent = (cid, node, unixfs2, path6, resolve6, depth, blockstore) => {
   async function* yieldFileContent(options = {}) {
     var _a, _b;
     const fileSize = unixfs2.fileSize();
@@ -13945,17 +14017,17 @@ var file_default = fileContent;
 
 // node_modules/ipfs-unixfs-exporter/dist/src/resolvers/unixfs-v1/content/hamt-sharded-directory.js
 var import_err_code12 = __toESM(require_err_code(), 1);
-var hamtShardedDirectoryContent = (cid, node, unixfs2, path3, resolve6, depth, blockstore) => {
+var hamtShardedDirectoryContent = (cid, node, unixfs2, path6, resolve6, depth, blockstore) => {
   function yieldHamtDirectoryContent(options = {}) {
     var _a;
     (_a = options.onProgress) == null ? void 0 : _a.call(options, new CustomProgressEvent("unixfs:exporter:walk:hamt-sharded-directory", {
       cid
     }));
-    return listDirectory(node, path3, resolve6, depth, blockstore, options);
+    return listDirectory(node, path6, resolve6, depth, blockstore, options);
   }
   return yieldHamtDirectoryContent;
 };
-async function* listDirectory(node, path3, resolve6, depth, blockstore, options) {
+async function* listDirectory(node, path6, resolve6, depth, blockstore, options) {
   const links = node.Links;
   if (node.Data == null) {
     throw (0, import_err_code12.default)(new Error("no data in PBNode"), "ERR_NOT_UNIXFS");
@@ -13975,7 +14047,7 @@ async function* listDirectory(node, path3, resolve6, depth, blockstore, options)
       var _a;
       const name4 = link.Name != null ? link.Name.substring(padLength) : null;
       if (name4 != null && name4 !== "") {
-        const result = await resolve6(link.Hash, name4, `${path3}/${name4}`, [], depth + 1, blockstore, options);
+        const result = await resolve6(link.Hash, name4, `${path6}/${name4}`, [], depth + 1, blockstore, options);
         return { entries: result.entry == null ? [] : [result.entry] };
       } else {
         const block = await blockstore.get(link.Hash, options);
@@ -13983,7 +14055,7 @@ async function* listDirectory(node, path3, resolve6, depth, blockstore, options)
         (_a = options.onProgress) == null ? void 0 : _a.call(options, new CustomProgressEvent("unixfs:exporter:walk:hamt-sharded-directory", {
           cid: link.Hash
         }));
-        return { entries: listDirectory(node, path3, resolve6, depth, blockstore, options) };
+        return { entries: listDirectory(node, path6, resolve6, depth, blockstore, options) };
       }
     };
   }), (source) => parallel(source, { ordered: true }));
@@ -14003,14 +14075,14 @@ var contentExporters = {
   file: file_default,
   directory: directory_default,
   "hamt-sharded-directory": hamt_sharded_directory_default,
-  metadata: (cid, node, unixfs2, path3, resolve6, depth, blockstore) => {
+  metadata: (cid, node, unixfs2, path6, resolve6, depth, blockstore) => {
     return () => [];
   },
-  symlink: (cid, node, unixfs2, path3, resolve6, depth, blockstore) => {
+  symlink: (cid, node, unixfs2, path6, resolve6, depth, blockstore) => {
     return () => [];
   }
 };
-var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, blockstore, options) => {
+var unixFsResolver = async (cid, name4, path6, toResolve, resolve6, depth, blockstore, options) => {
   const block = await blockstore.get(cid, options);
   const node = decode11(block);
   let unixfs2;
@@ -14026,8 +14098,8 @@ var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, block
   } catch (err) {
     throw (0, import_err_code13.default)(err, "ERR_NOT_UNIXFS");
   }
-  if (path3 == null) {
-    path3 = name4;
+  if (path6 == null) {
+    path6 = name4;
   }
   if (toResolve.length > 0) {
     let linkCid;
@@ -14040,7 +14112,7 @@ var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, block
       throw (0, import_err_code13.default)(new Error("file does not exist"), "ERR_NOT_FOUND");
     }
     const nextName = toResolve.shift();
-    const nextPath = `${path3}/${nextName}`;
+    const nextPath = `${path6}/${nextName}`;
     next = {
       cid: linkCid,
       toResolve,
@@ -14048,7 +14120,7 @@ var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, block
       path: nextPath
     };
   }
-  const content = contentExporters[unixfs2.type](cid, node, unixfs2, path3, resolve6, depth, blockstore);
+  const content = contentExporters[unixfs2.type](cid, node, unixfs2, path6, resolve6, depth, blockstore);
   if (content == null) {
     throw (0, import_err_code13.default)(new Error("could not find content exporter"), "ERR_NOT_FOUND");
   }
@@ -14057,7 +14129,7 @@ var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, block
       entry: {
         type: "directory",
         name: name4,
-        path: path3,
+        path: path6,
         cid,
         content,
         unixfs: unixfs2,
@@ -14072,7 +14144,7 @@ var unixFsResolver = async (cid, name4, path3, toResolve, resolve6, depth, block
     entry: {
       type: "file",
       name: name4,
-      path: path3,
+      path: path6,
       cid,
       content,
       unixfs: unixfs2,
@@ -14092,54 +14164,54 @@ var resolvers = {
   [code]: dag_cbor_default,
   [identity2.code]: identity_default
 };
-var resolve4 = async (cid, name4, path3, toResolve, depth, blockstore, options) => {
+var resolve4 = async (cid, name4, path6, toResolve, depth, blockstore, options) => {
   const resolver = resolvers[cid.code];
   if (resolver == null) {
     throw (0, import_err_code14.default)(new Error(`No resolver for code ${cid.code}`), "ERR_NO_RESOLVER");
   }
-  return resolver(cid, name4, path3, toResolve, resolve4, depth, blockstore, options);
+  return resolver(cid, name4, path6, toResolve, resolve4, depth, blockstore, options);
 };
 var resolvers_default = resolve4;
 
 // node_modules/ipfs-unixfs-exporter/dist/src/index.js
-var toPathComponents2 = (path3 = "") => {
-  return (path3.trim().match(/([^\\^/]|\\\/)+/g) ?? []).filter(Boolean);
+var toPathComponents2 = (path6 = "") => {
+  return (path6.trim().match(/([^\\^/]|\\\/)+/g) ?? []).filter(Boolean);
 };
-var cidAndRest = (path3) => {
-  if (path3 instanceof Uint8Array) {
+var cidAndRest = (path6) => {
+  if (path6 instanceof Uint8Array) {
     return {
-      cid: CID2.decode(path3),
+      cid: CID2.decode(path6),
       toResolve: []
     };
   }
-  const cid = CID2.asCID(path3);
+  const cid = CID2.asCID(path6);
   if (cid != null) {
     return {
       cid,
       toResolve: []
     };
   }
-  if (typeof path3 === "string") {
-    if (path3.indexOf("/ipfs/") === 0) {
-      path3 = path3.substring(6);
+  if (typeof path6 === "string") {
+    if (path6.indexOf("/ipfs/") === 0) {
+      path6 = path6.substring(6);
     }
-    const output = toPathComponents2(path3);
+    const output = toPathComponents2(path6);
     return {
       cid: CID2.parse(output[0]),
       toResolve: output.slice(1)
     };
   }
-  throw (0, import_err_code15.default)(new Error(`Unknown path type ${path3}`), "ERR_BAD_PATH");
+  throw (0, import_err_code15.default)(new Error(`Unknown path type ${path6}`), "ERR_BAD_PATH");
 };
-async function* walkPath(path3, blockstore, options = {}) {
-  let { cid, toResolve } = cidAndRest(path3);
+async function* walkPath(path6, blockstore, options = {}) {
+  let { cid, toResolve } = cidAndRest(path6);
   let name4 = cid.toString();
   let entryPath = name4;
   const startingDepth = toResolve.length;
   while (true) {
     const result = await resolvers_default(cid, name4, entryPath, toResolve, startingDepth, blockstore, options);
     if (result.entry == null && result.next == null) {
-      throw (0, import_err_code15.default)(new Error(`Could not resolve ${path3}`), "ERR_NOT_FOUND");
+      throw (0, import_err_code15.default)(new Error(`Could not resolve ${path6}`), "ERR_NOT_FOUND");
     }
     if (result.entry != null) {
       yield result.entry;
@@ -14153,15 +14225,15 @@ async function* walkPath(path3, blockstore, options = {}) {
     entryPath = result.next.path;
   }
 }
-async function exporter(path3, blockstore, options = {}) {
-  const result = await src_default7(walkPath(path3, blockstore, options));
+async function exporter(path6, blockstore, options = {}) {
+  const result = await src_default7(walkPath(path6, blockstore, options));
   if (result == null) {
-    throw (0, import_err_code15.default)(new Error(`Could not resolve ${path3}`), "ERR_NOT_FOUND");
+    throw (0, import_err_code15.default)(new Error(`Could not resolve ${path6}`), "ERR_NOT_FOUND");
   }
   return result;
 }
-async function* recursive(path3, blockstore, options = {}) {
-  const node = await exporter(path3, blockstore, options);
+async function* recursive(path6, blockstore, options = {}) {
+  const node = await exporter(path6, blockstore, options);
   if (node == null) {
     return;
   }
@@ -14268,17 +14340,17 @@ import_debug.default.formatters.a = (v) => {
   return v == null ? "undefined" : v.toString();
 };
 function createDisabledLogger(namespace) {
-  const logger2 = () => {
+  const logger3 = () => {
   };
-  logger2.enabled = false;
-  logger2.color = "";
-  logger2.diff = 0;
-  logger2.log = () => {
+  logger3.enabled = false;
+  logger3.color = "";
+  logger3.diff = 0;
+  logger3.log = () => {
   };
-  logger2.namespace = namespace;
-  logger2.destroy = () => true;
-  logger2.extend = () => logger2;
-  return logger2;
+  logger3.namespace = namespace;
+  logger3.destroy = () => true;
+  logger3.extend = () => logger3;
+  return logger3;
 }
 function logger(name4) {
   let trace = createDisabledLogger(`${name4}:trace`);
@@ -14708,15 +14780,15 @@ var createShard = async (blockstore, contents, options) => {
   }
   return res;
 };
-var updateShardedDirectory = async (path3, blockstore, options) => {
-  const shardRoot = UnixFS.unmarshal(path3[0].node.Data ?? new Uint8Array(0));
+var updateShardedDirectory = async (path6, blockstore, options) => {
+  const shardRoot = UnixFS.unmarshal(path6[0].node.Data ?? new Uint8Array(0));
   const fanout = BigInt(Math.pow(2, hamtBucketBits));
-  path3.reverse();
+  path6.reverse();
   let cid;
   let node;
-  for (let i = 0; i < path3.length; i++) {
-    const isRoot = i === path3.length - 1;
-    const segment = path3[i];
+  for (let i = 0; i < path6.length; i++) {
+    const isRoot = i === path6.length - 1;
+    const segment = path6[i];
     const data = Uint8Array.from(segment.children.bitField().reverse());
     const dir = new UnixFS({
       type: "hamt-sharded-directory",
@@ -14735,7 +14807,7 @@ var updateShardedDirectory = async (path3, blockstore, options) => {
     const block = encode7(prepare(node));
     cid = await persist2(block, blockstore, options);
     if (!isRoot) {
-      const nextSegment = path3[i + 1];
+      const nextSegment = path6[i + 1];
       if (nextSegment == null) {
         throw new Error("Was not operating on shard root but also had no parent?");
       }
@@ -14756,14 +14828,14 @@ var updateShardedDirectory = async (path3, blockstore, options) => {
 var recreateShardedDirectory = async (cid, fileName, blockstore, options) => {
   const wrapped = wrapHash2(hamtHashFn2);
   const hash = wrapped(fromString3(fileName));
-  const path3 = [];
+  const path6 = [];
   while (true) {
     const block = await blockstore.get(cid, options);
     const node = decode11(block);
     const children = new import_sparse_array2.default();
     const index = await hash.take(hamtBucketBits);
     const prefix = toPrefix2(index);
-    path3.push({
+    path6.push({
       prefix,
       children,
       node
@@ -14795,7 +14867,7 @@ var recreateShardedDirectory = async (cid, fileName, blockstore, options) => {
     }
     break;
   }
-  return { path: path3, hash };
+  return { path: path6, hash };
 };
 
 // node_modules/@helia/unixfs/dist/src/commands/utils/is-over-shard-threshold.js
@@ -14925,8 +14997,8 @@ var addToDirectory = async (parent, child, blockstore, options) => {
 };
 var addToShardedDirectory = async (parent, child, blockstore, options) => {
   var _a;
-  const { path: path3, hash } = await recreateShardedDirectory(parent.cid, child.Name, blockstore, options);
-  const finalSegment = path3[path3.length - 1];
+  const { path: path6, hash } = await recreateShardedDirectory(parent.cid, child.Name, blockstore, options);
+  const finalSegment = path6[path6.length - 1];
   if (finalSegment == null) {
     throw new Error("Invalid HAMT, could not generate path");
   }
@@ -14960,7 +15032,7 @@ var addToShardedDirectory = async (parent, child, blockstore, options) => {
       const siblingName = (sibling.Name ?? "").substring(2);
       const wrapped = wrapHash2(hamtHashFn2);
       const siblingHash = wrapped(fromString3(siblingName));
-      for (let i = 0; i < path3.length; i++) {
+      for (let i = 0; i < path6.length; i++) {
         await siblingHash.take(hamtBucketBits);
       }
       while (true) {
@@ -14972,7 +15044,7 @@ var addToShardedDirectory = async (parent, child, blockstore, options) => {
         if (siblingPrefix === newPrefix) {
           const children2 = new import_sparse_array3.default();
           children2.set(newIndex, true);
-          path3.push({
+          path6.push({
             prefix: newPrefix,
             children: children2,
             node: {
@@ -14984,7 +15056,7 @@ var addToShardedDirectory = async (parent, child, blockstore, options) => {
         const children = new import_sparse_array3.default();
         children.set(newIndex, true);
         children.set(siblingIndex, true);
-        path3.push({
+        path6.push({
           prefix,
           children,
           node: {
@@ -15008,7 +15080,7 @@ var addToShardedDirectory = async (parent, child, blockstore, options) => {
     finalSegment.children.set(index, true);
     log2("adding %s to existing sub-shard", linkName);
   }
-  return updateShardedDirectory(path3, blockstore, options);
+  return updateShardedDirectory(path6, blockstore, options);
 };
 
 // node_modules/@helia/unixfs/dist/src/commands/utils/cid-to-directory.js
@@ -15042,12 +15114,12 @@ function dagNodeTsize(node) {
 
 // node_modules/@helia/unixfs/dist/src/commands/utils/resolve.js
 var log3 = logger("helia:unixfs:components:utils:resolve");
-async function resolve5(cid, path3, blockstore, options) {
-  if (path3 == null || path3 === "") {
+async function resolve5(cid, path6, blockstore, options) {
+  if (path6 == null || path6 === "") {
     return { cid };
   }
-  log3('resolve "%s" under %c', path3, cid);
-  const parts = path3.split("/").filter(Boolean);
+  log3('resolve "%s" under %c', path6, cid);
+  const parts = path6.split("/").filter(Boolean);
   const segments = [{
     name: "",
     cid,
@@ -15083,10 +15155,10 @@ async function resolve5(cid, path3, blockstore, options) {
       throw new InvalidParametersError("Could not resolve path");
     }
   }
-  log3("resolved %s to %c", path3, cid);
+  log3("resolved %s to %c", path6, cid);
   return {
     cid,
-    path: path3,
+    path: path6,
     segments
   };
 }
@@ -15355,8 +15427,8 @@ var removeFromDirectory = async (parent, name4, blockstore, options) => {
   };
 };
 var removeFromShardedDirectory = async (parent, name4, blockstore, options) => {
-  const { path: path3 } = await recreateShardedDirectory(parent.cid, name4, blockstore, options);
-  const finalSegment = path3[path3.length - 1];
+  const { path: path6 } = await recreateShardedDirectory(parent.cid, name4, blockstore, options);
+  const finalSegment = path6[path6.length - 1];
   if (finalSegment == null) {
     throw new Error("Invalid HAMT, could not generate path");
   }
@@ -15370,15 +15442,15 @@ var removeFromShardedDirectory = async (parent, name4, blockstore, options) => {
   finalSegment.children.unset(index);
   if (finalSegment.node.Links.length === 1) {
     while (true) {
-      if (path3.length === 1) {
+      if (path6.length === 1) {
         break;
       }
-      const segment = path3[path3.length - 1];
+      const segment = path6[path6.length - 1];
       if (segment == null || segment.node.Links.length > 1) {
         break;
       }
-      path3.pop();
-      const nextSegment = path3[path3.length - 1];
+      path6.pop();
+      const nextSegment = path6[path6.length - 1];
       if (nextSegment == null) {
         break;
       }
@@ -15391,7 +15463,7 @@ var removeFromShardedDirectory = async (parent, name4, blockstore, options) => {
       });
     }
   }
-  return updateShardedDirectory(path3, blockstore, options);
+  return updateShardedDirectory(path6, blockstore, options);
 };
 var convertToFlatDirectory = async (parent, blockstore, options) => {
   if (parent.node.Data == null) {
@@ -15649,6 +15721,10 @@ async function touch(cid, blockstore, options = {}) {
   await blockstore.put(updatedCid, updatedBlock);
   return updatePathCids(updatedCid, resolved, blockstore, opts);
 }
+
+// node_modules/it-glob/dist/src/index.js
+import fs4 from "fs/promises";
+import path2 from "path";
 
 // node_modules/minimatch/dist/mjs/index.js
 var import_brace_expansion = __toESM(require_brace_expansion(), 1);
@@ -16978,6 +17054,39 @@ minimatch.Minimatch = Minimatch;
 minimatch.escape = escape;
 minimatch.unescape = unescape;
 
+// node_modules/it-glob/dist/src/index.js
+async function* glob(dir, pattern, options = {}) {
+  const absoluteDir = path2.resolve(dir);
+  const relativeDir = path2.relative(options.cwd ?? process.cwd(), dir);
+  const stats = await fs4.stat(absoluteDir);
+  if (stats.isDirectory()) {
+    for await (const entry of _glob(absoluteDir, "", pattern, options)) {
+      yield entry;
+    }
+    return;
+  }
+  if (minimatch(relativeDir, pattern, options)) {
+    yield options.absolute === true ? absoluteDir : relativeDir;
+  }
+}
+async function* _glob(base3, dir, pattern, options) {
+  for await (const entry of await fs4.opendir(path2.join(base3, dir))) {
+    const relativeEntryPath = path2.join(dir, entry.name);
+    const absoluteEntryPath = path2.join(base3, dir, entry.name);
+    let match2 = minimatch(relativeEntryPath, pattern, options);
+    const isDirectory = entry.isDirectory();
+    if (isDirectory && options.nodir === true) {
+      match2 = false;
+    }
+    if (match2) {
+      yield options.absolute === true ? absoluteEntryPath : relativeEntryPath;
+    }
+    if (isDirectory) {
+      yield* _glob(base3, relativeEntryPath, pattern, options);
+    }
+  }
+}
+
 // node_modules/@helia/unixfs/dist/src/index.js
 var DefaultUnixFS = class {
   components;
@@ -17014,8 +17123,8 @@ var DefaultUnixFS = class {
   async mkdir(cid, dirname, options = {}) {
     return mkdir(cid, dirname, this.components.blockstore, options);
   }
-  async rm(cid, path3, options = {}) {
-    return rm(cid, path3, this.components.blockstore, options);
+  async rm(cid, path6, options = {}) {
+    return rm(cid, path6, this.components.blockstore, options);
   }
   async stat(cid, options = {}) {
     return stat(cid, this.components.blockstore, options);
@@ -17028,12 +17137,292 @@ function unixfs(helia) {
   return new DefaultUnixFS(helia);
 }
 
+// node_modules/blockstore-fs/dist/src/index.js
+import fs5 from "node:fs/promises";
+import path4 from "node:path";
+import { promisify as promisify3 } from "node:util";
+
+// node_modules/blockstore-core/dist/src/errors.js
+var errors_exports = {};
+__export(errors_exports, {
+  abortedError: () => abortedError,
+  closeFailedError: () => closeFailedError,
+  deleteFailedError: () => deleteFailedError,
+  getFailedError: () => getFailedError,
+  hasFailedError: () => hasFailedError,
+  notFoundError: () => notFoundError,
+  openFailedError: () => openFailedError,
+  putFailedError: () => putFailedError
+});
+var import_err_code16 = __toESM(require_err_code(), 1);
+function openFailedError(err) {
+  err = err ?? new Error("Open failed");
+  return (0, import_err_code16.default)(err, "ERR_OPEN_FAILED");
+}
+function closeFailedError(err) {
+  err = err ?? new Error("Close failed");
+  return (0, import_err_code16.default)(err, "ERR_CLOSE_FAILED");
+}
+function putFailedError(err) {
+  err = err ?? new Error("Put failed");
+  return (0, import_err_code16.default)(err, "ERR_PUT_FAILED");
+}
+function getFailedError(err) {
+  err = err ?? new Error("Get failed");
+  return (0, import_err_code16.default)(err, "ERR_GET_FAILED");
+}
+function deleteFailedError(err) {
+  err = err ?? new Error("Delete failed");
+  return (0, import_err_code16.default)(err, "ERR_DELETE_FAILED");
+}
+function hasFailedError(err) {
+  err = err ?? new Error("Has failed");
+  return (0, import_err_code16.default)(err, "ERR_HAS_FAILED");
+}
+function notFoundError(err) {
+  err = err ?? new Error("Not Found");
+  return (0, import_err_code16.default)(err, "ERR_NOT_FOUND");
+}
+function abortedError(err) {
+  err = err ?? new Error("Aborted");
+  return (0, import_err_code16.default)(err, "ERR_ABORTED");
+}
+
+// node_modules/blockstore-core/node_modules/@libp2p/logger/dist/src/index.js
+var import_debug2 = __toESM(require_src2(), 1);
+import_debug2.default.formatters.b = (v) => {
+  return v == null ? "undefined" : base58btc2.baseEncode(v);
+};
+import_debug2.default.formatters.t = (v) => {
+  return v == null ? "undefined" : base322.baseEncode(v);
+};
+import_debug2.default.formatters.m = (v) => {
+  return v == null ? "undefined" : base64.baseEncode(v);
+};
+import_debug2.default.formatters.p = (v) => {
+  return v == null ? "undefined" : v.toString();
+};
+import_debug2.default.formatters.c = (v) => {
+  return v == null ? "undefined" : v.toString();
+};
+import_debug2.default.formatters.k = (v) => {
+  return v == null ? "undefined" : v.toString();
+};
+import_debug2.default.formatters.a = (v) => {
+  return v == null ? "undefined" : v.toString();
+};
+function createDisabledLogger2(namespace) {
+  const logger3 = () => {
+  };
+  logger3.enabled = false;
+  logger3.color = "";
+  logger3.diff = 0;
+  logger3.log = () => {
+  };
+  logger3.namespace = namespace;
+  logger3.destroy = () => true;
+  logger3.extend = () => logger3;
+  return logger3;
+}
+function logger2(name4) {
+  let trace = createDisabledLogger2(`${name4}:trace`);
+  if (import_debug2.default.enabled(`${name4}:trace`) && import_debug2.default.names.map((r) => r.toString()).find((n) => n.includes(":trace")) != null) {
+    trace = (0, import_debug2.default)(`${name4}:trace`);
+  }
+  return Object.assign((0, import_debug2.default)(name4), {
+    error: (0, import_debug2.default)(`${name4}:error`),
+    trace
+  });
+}
+
+// node_modules/blockstore-core/dist/src/tiered.js
+var log11 = logger2("blockstore:core:tiered");
+
+// node_modules/blockstore-core/dist/src/index.js
+var Errors = {
+  ...errors_exports
+};
+
+// node_modules/blockstore-fs/dist/src/index.js
+var import_fast_write_atomic = __toESM(require_fast_write_atomic(), 1);
+
+// node_modules/blockstore-fs/dist/src/sharding.js
+import path3 from "node:path";
+var NextToLast = class {
+  extension;
+  prefixLength;
+  base;
+  constructor(init = {}) {
+    this.extension = init.extension ?? ".data";
+    this.prefixLength = init.prefixLength ?? 2;
+    this.base = init.base ?? base32upper2;
+  }
+  encode(cid) {
+    const str = this.base.encoder.encode(cid.multihash.bytes);
+    const prefix = str.substring(str.length - this.prefixLength);
+    return {
+      dir: prefix,
+      file: `${str}${this.extension}`
+    };
+  }
+  decode(str) {
+    let fileName = path3.basename(str);
+    if (fileName.endsWith(this.extension)) {
+      fileName = fileName.substring(0, fileName.length - this.extension.length);
+    }
+    return CID2.decode(this.base.decoder.decode(fileName));
+  }
+};
+
+// node_modules/blockstore-fs/dist/src/index.js
+var writeAtomic = promisify3(import_fast_write_atomic.default);
+async function writeFile(file, contents) {
+  try {
+    await writeAtomic(file, contents);
+  } catch (err) {
+    if (err.code === "EPERM" && err.syscall === "rename") {
+      await fs5.access(file, fs5.constants.F_OK | fs5.constants.W_OK);
+      return;
+    }
+    throw err;
+  }
+}
+var FsBlockstore = class {
+  path;
+  createIfMissing;
+  errorIfExists;
+  putManyConcurrency;
+  getManyConcurrency;
+  deleteManyConcurrency;
+  shardingStrategy;
+  constructor(location, init = {}) {
+    this.path = path4.resolve(location);
+    this.createIfMissing = init.createIfMissing ?? true;
+    this.errorIfExists = init.errorIfExists ?? false;
+    this.deleteManyConcurrency = init.deleteManyConcurrency ?? 50;
+    this.getManyConcurrency = init.getManyConcurrency ?? 50;
+    this.putManyConcurrency = init.putManyConcurrency ?? 50;
+    this.shardingStrategy = init.shardingStrategy ?? new NextToLast();
+  }
+  async open() {
+    try {
+      await fs5.access(this.path, fs5.constants.F_OK | fs5.constants.W_OK);
+      if (this.errorIfExists) {
+        throw Errors.openFailedError(new Error(`Blockstore directory: ${this.path} already exists`));
+      }
+    } catch (err) {
+      if (err.code === "ENOENT") {
+        if (this.createIfMissing) {
+          await fs5.mkdir(this.path, { recursive: true });
+          return;
+        } else {
+          throw Errors.openFailedError(new Error(`Blockstore directory: ${this.path} does not exist`));
+        }
+      }
+      throw err;
+    }
+  }
+  async close() {
+    await Promise.resolve();
+  }
+  async put(key, val) {
+    const { dir, file } = this.shardingStrategy.encode(key);
+    try {
+      if (dir != null && dir !== "") {
+        await fs5.mkdir(path4.join(this.path, dir), {
+          recursive: true
+        });
+      }
+      await writeFile(path4.join(this.path, dir, file), val);
+      return key;
+    } catch (err) {
+      throw Errors.putFailedError(err);
+    }
+  }
+  async *putMany(source) {
+    yield* parallelBatch(src_default3(source, ({ cid, block }) => {
+      return async () => {
+        await this.put(cid, block);
+        return cid;
+      };
+    }), this.putManyConcurrency);
+  }
+  async get(key) {
+    const { dir, file } = this.shardingStrategy.encode(key);
+    try {
+      return await fs5.readFile(path4.join(this.path, dir, file));
+    } catch (err) {
+      throw Errors.notFoundError(err);
+    }
+  }
+  async *getMany(source) {
+    yield* parallelBatch(src_default3(source, (key) => {
+      return async () => {
+        return {
+          cid: key,
+          block: await this.get(key)
+        };
+      };
+    }), this.getManyConcurrency);
+  }
+  async delete(key) {
+    const { dir, file } = this.shardingStrategy.encode(key);
+    try {
+      await fs5.unlink(path4.join(this.path, dir, file));
+    } catch (err) {
+      if (err.code === "ENOENT") {
+        return;
+      }
+      throw Errors.deleteFailedError(err);
+    }
+  }
+  async *deleteMany(source) {
+    yield* parallelBatch(src_default3(source, (key) => {
+      return async () => {
+        await this.delete(key);
+        return key;
+      };
+    }), this.deleteManyConcurrency);
+  }
+  /**
+   * Check for the existence of the given key
+   */
+  async has(key) {
+    const { dir, file } = this.shardingStrategy.encode(key);
+    try {
+      await fs5.access(path4.join(this.path, dir, file));
+    } catch (err) {
+      return false;
+    }
+    return true;
+  }
+  async *getAll() {
+    const pattern = `**/*${this.shardingStrategy.extension}`.split(path4.sep).join("/");
+    const files = glob(this.path, pattern, {
+      absolute: true
+    });
+    for await (const file of files) {
+      try {
+        const buf2 = await fs5.readFile(file);
+        const pair = {
+          cid: this.shardingStrategy.decode(file),
+          block: buf2
+        };
+        yield pair;
+      } catch (err) {
+        if (err.code !== "ENOENT") {
+          throw err;
+        }
+      }
+    }
+  }
+};
+
 // src/objectManager.js
-import { FsBlockstore } from "blockstore-fs";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir as mkdir2, rm as rm2 } from "node:fs/promises";
 import os from "node:os";
-import path2 from "node:path";
+import path5 from "node:path";
 import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
 var ObjectManager = class {
@@ -17169,7 +17558,7 @@ var ObjectManager = class {
       };
       let temporaryCarFilePath, temporaryBlockstoreDir;
       try {
-        temporaryBlockstoreDir = path2.resolve(
+        temporaryBlockstoreDir = path5.resolve(
           os.tmpdir(),
           "filebase-sdk",
           "uploads",
