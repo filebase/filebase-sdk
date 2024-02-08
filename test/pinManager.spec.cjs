@@ -1,11 +1,10 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { PinManager } from "../src/index.js";
-import { v4 as uuidv4 } from "uuid";
-import Path from "node:path";
-import os from "node:os";
-import { writeFile } from "node:fs/promises";
-import { BucketManager } from "../dist/index.mjs";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { BucketManager, PinManager } = require("../dist/index.js");
+const Path = require("node:path");
+const { writeFile } = require("node:fs/promises");
+const { v4: uuidv4 } = require("uuid");
+const os = require("node:os");
 
 const TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT",
   TEST_CID_2 = "QmNXcMdXadLRTxLpHJMsGnaeKz26d2F6NgUDVWScp54EfC",

@@ -1,6 +1,6 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { NameManager } from "../dist/index.mjs";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { NameManager } = require("../dist/index.js");
 
 const TEST_CID = process.env.TEST_NAME_CID,
   TEST_PRIVATE_KEY = process.env.TEST_NAME_PRIVATE_KEY,

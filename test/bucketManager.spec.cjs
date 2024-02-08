@@ -1,10 +1,10 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { BucketManager } from "../dist/index.mjs";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { BucketManager } = require("../dist/index.js");
 
 const TEST_PREFIX = Date.now();
 
-test("create bucket", async (t) => {
+test("create bucket", async () => {
   // Initialize BucketManager
   const bucketManager = new BucketManager(
     process.env.TEST_S3_KEY || process.env.TEST_KEY,
@@ -51,7 +51,7 @@ test("list buckets", async () => {
   );
 });
 
-test("delete bucket", async (t) => {
+test("delete bucket", async () => {
   // Initialize BucketManager
   const bucketManager = new BucketManager(
     process.env.TEST_S3_KEY || process.env.TEST_KEY,
@@ -82,7 +82,7 @@ test("delete bucket", async (t) => {
   assert.equal(typeof deletedBucket, "undefined");
 });
 
-test("set bucket privacy to public", async (t) => {
+test("set bucket privacy to public", async () => {
   // Initialize BucketManager
   const bucketManager = new BucketManager(
     process.env.TEST_S3_KEY || process.env.TEST_KEY,
