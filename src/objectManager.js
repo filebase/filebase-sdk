@@ -16,7 +16,7 @@ import { unixfs } from "@helia/unixfs";
 import { FsBlockstore } from "blockstore-fs";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
-import { createReadStream, createWriteStream, ReadStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm, open } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
