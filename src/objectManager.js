@@ -14,7 +14,7 @@ import { car } from "@helia/car";
 import { unixfs } from "@helia/unixfs";
 import { FsBlockstore } from "blockstore-fs";
 // Utility Imports
-import { createReadStream, createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream, ReadStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -190,13 +190,21 @@ class ObjectManager {
           blockstore: temporaryBlockstore,
         });
 
+        const fileHandlers = new Map();
         for (let sourceEntry of source) {
           sourceEntry.path =
             sourceEntry.path[0] === "/"
               ? `/${uploadUUID}${sourceEntry.path}`
               : `/${uploadUUID}/${sourceEntry.path}`;
+          if (sourceEntry.content instanceof ReadStream) {
+            fileHandlers.set(sourceEntry.path, sourceEntry.content);
+          }
         }
         for await (const entry of heliaFs.addAll(source)) {
+          if (fileHandlers.has(entry.path)) {
+            fileHandlers.get(entry.path).destroy();
+            fileHandlers.delete(entry.path);
+          }
           parsedEntries[entry.path] = entry;
         }
         const rootEntry = parsedEntries[uploadUUID];
