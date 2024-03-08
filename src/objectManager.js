@@ -17,7 +17,7 @@ import { FsBlockstore } from "blockstore-fs";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rm, open } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -190,40 +190,61 @@ class ObjectManager {
         const temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir),
           temporaryDatastore = new MemoryDatastore();
 
+        let createFilePromises = [];
+        let createdFiles = new Map();
         const heliaFs = unixfs({
-            blockstore: temporaryBlockstore,
-            datastore: temporaryDatastore,
-          }),
-          heliaMfs = mfs({
-            blockstore: temporaryBlockstore,
-            datastore: temporaryDatastore,
-          });
+          blockstore: temporaryBlockstore,
+        });
         const queue = new PQueue({ concurrency: os.cpus().length });
-        let parsePromises = [];
         for (const entry of source) {
-          parsePromises.push(
-            (async () => {
-              let fileHandle;
-              try {
-                await queue.add(async () => {
-                  if (entry.type === "import") {
-                    fileHandle = await open(entry.content);
-                    entry.content = await fileHandle.createReadStream();
-                  }
-                  parsedEntries[entry.path] = await heliaFs.addFile({
-                    path: entry.path,
-                    content: entry.content,
-                  });
-                });
-              } finally {
-                if (typeof fileHandle !== "undefined") {
-                  await fileHandle.close();
+          const task = (async () => {
+            await queue.add(async () => {
+              let createdFile;
+              if (
+                entry.type === "import" ||
+                entry.content instanceof Readable
+              ) {
+                if (entry.type === "import") {
+                  entry.content = await createReadStream(
+                    path.resolve(entry.content),
+                  );
                 }
+                createdFile = await heliaFs.addByteStream(entry.content);
+              } else if (entry.content !== null) {
+                createdFile = await heliaFs.addBytes(entry.content);
+              } else {
+                return;
               }
-            })(),
-          );
+              createdFiles.set(entry.path, createdFile);
+            });
+          })();
+          createFilePromises.push(task);
         }
-        await Promise.all(parsePromises);
+        await Promise.all(createFilePromises);
+
+        const heliaMfs = mfs({
+          blockstore: temporaryBlockstore,
+          datastore: temporaryDatastore,
+        });
+        let createdDirectories = new Set();
+        for (const entry of source) {
+          const pathsToCreate = splitPath(entry.path);
+          for (const pathToCreate of pathsToCreate) {
+            if (createdDirectories.has(pathToCreate) === false) {
+              await heliaMfs.mkdir(pathToCreate);
+              createdDirectories.add(pathToCreate);
+            }
+          }
+          if (entry.content === null) {
+            await heliaMfs.mkdir(entry.path);
+          } else {
+            const entryFile = createdFiles.get(entry.path);
+            await heliaMfs.cp(entryFile, entry.path);
+          }
+        }
+        for (const entry of source) {
+          parsedEntries[entry.path] = await heliaMfs.stat(entry.path);
+        }
         parsedEntries["/"] = await heliaMfs.stat("/");
 
         // Get carFile stream here
@@ -461,6 +482,30 @@ class ObjectManager {
     await this.#client.send(command);
     return true;
   }
+}
+
+function splitPath(inputPath) {
+  // Split the path into its components
+  const parts = inputPath.split("/");
+
+  // Initialize an empty array to hold the incremental paths
+  let incrementalPaths = [];
+
+  // Use reduce to build each part of the path incrementally
+  parts.reduce((acc, curr, index) => {
+    // Skip the first empty element due to the leading "/"
+    if (index > 0) {
+      const newPath = `${acc}/${curr}`;
+      incrementalPaths.push(newPath);
+      return newPath;
+    }
+    return acc;
+  }, "");
+
+  // Remove the last element because it's the file name, not a folder
+  incrementalPaths = incrementalPaths.slice(0, -1);
+
+  return incrementalPaths;
 }
 
 export default ObjectManager;
