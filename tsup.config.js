@@ -1,11 +1,19 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ['src/index.js'],
+  entry: ["src/index.js"],
   splitting: false,
   sourcemap: false,
-  noExternal: ['@ipld/car', '@helia/car', '@helia/unixfs', 'blockstore-fs'],
+  noExternal: [
+    "@ipld/car",
+    "@helia/car",
+    "@helia/unixfs",
+    "@helia/mfs",
+    "blockstore-fs",
+    "datastore-core",
+    "p-queue",
+  ],
   dts: true,
-  format: ['cjs'],
+  format: ["cjs"],
   clean: true,
-})
+});

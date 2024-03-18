@@ -1,6 +1,6 @@
 {
   "name": "@filebase/sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "SDK for Interacting with Filebase Services [S3(Buckets, Objects), IPFS(Gateways, Pins) IPNS(Names)]",
   "repository": {
     "type": "git",
@@ -51,10 +51,14 @@
     "@aws-sdk/client-s3": "3.478.0",
     "@aws-sdk/lib-storage": "3.478.0",
     "@helia/car": "1.0.4",
+    "@helia/mfs": "3.0.1",
     "@helia/unixfs": "1.4.3",
     "@ipld/car": "5.2.4",
     "axios": "1.6.2",
-    "blockstore-fs": "1.1.8",
-    "uuid": "9.0.1"
+    "blockstore-fs": "1.1.10",
+    "datastore-core": "9.2.9",
+    "p-queue": "8.0.1",
+    "uuid": "9.0.1",
+    "winston": "3.12.0"
   }
 }
