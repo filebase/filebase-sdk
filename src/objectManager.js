@@ -188,7 +188,7 @@ class ObjectManager {
         // Setup Blockstore
         temporaryBlockstoreDir = path.resolve(
           os.tmpdir(),
-          ".filebase-sdk",
+          "filebase-sdk",
           "uploads",
           uploadUUID,
         );
