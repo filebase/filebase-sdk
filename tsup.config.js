@@ -9,7 +9,7 @@ export default defineConfig({
     "@helia/car",
     "@helia/unixfs",
     "@helia/mfs",
-    "blockstore-fs",
+    "blockstore-level",
     "datastore-core",
     "p-queue",
   ],
