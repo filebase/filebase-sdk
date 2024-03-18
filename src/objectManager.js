@@ -15,7 +15,7 @@ import { CarWriter } from "@ipld/car";
 import { car } from "@helia/car";
 import { mfs } from "@helia/mfs";
 import { unixfs } from "@helia/unixfs";
-import { LevelBlockstore } from "blockstore-level";
+import { FsBlockstore } from "blockstore-fs";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
 import { once } from "node:events";
@@ -194,7 +194,7 @@ class ObjectManager {
         );
         temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`;
         await mkdir(temporaryBlockstoreDir, { recursive: true });
-        const temporaryBlockstore = new LevelBlockstore(temporaryBlockstoreDir),
+        const temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir),
           temporaryDatastore = new MemoryDatastore();
 
         let createdFiles = new Map();
