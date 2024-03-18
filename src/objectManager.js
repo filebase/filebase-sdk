@@ -1,3 +1,5 @@
+// Environment Imports
+import logger from "./logger.js";
 // S3 Imports
 import {
   CopyObjectCommand,
@@ -13,11 +15,12 @@ import { CarWriter } from "@ipld/car";
 import { car } from "@helia/car";
 import { mfs } from "@helia/mfs";
 import { unixfs } from "@helia/unixfs";
-import { FsBlockstore } from "blockstore-fs";
+import { LevelBlockstore } from "blockstore-level";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
+import { once } from "node:events";
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, open } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -152,6 +155,7 @@ class ObjectManager {
   async upload(key, source, metadata, options) {
     // Generate Upload UUID
     const uploadUUID = uuidv4();
+    const uploadLogger = logger.child({ uploadUUID });
 
     // Setup Upload Options
     const bucket = options?.bucket || this.#defaultBucket,
@@ -175,80 +179,139 @@ class ObjectManager {
         ...uploadOptions.params.Metadata,
         import: "car",
       };
+      source.sort((a, b) => {
+        return countSlashes(b.path) - countSlashes(a.path);
+      });
 
       let temporaryCarFilePath, temporaryBlockstoreDir;
       try {
         // Setup Blockstore
         temporaryBlockstoreDir = path.resolve(
           os.tmpdir(),
-          "filebase-sdk",
+          ".filebase-sdk",
           "uploads",
           uploadUUID,
         );
         temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`;
         await mkdir(temporaryBlockstoreDir, { recursive: true });
-        const temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir),
+        const temporaryBlockstore = new LevelBlockstore(temporaryBlockstoreDir),
           temporaryDatastore = new MemoryDatastore();
 
-        let createFilePromises = [];
         let createdFiles = new Map();
         const heliaFs = unixfs({
           blockstore: temporaryBlockstore,
         });
-        const queue = new PQueue({ concurrency: os.cpus().length });
+        uploadLogger.verbose("UNIXFS_ADD", {
+          count: source.length,
+        });
+        let createFilePromises = [];
+        const queue = new PQueue({ concurrency: 50 });
         for (const entry of source) {
+          if (entry.content === null) {
+            continue;
+          }
           const task = (async () => {
             await queue.add(async () => {
+              uploadLogger.silly("SOURCE_IMPORT_STARTED", {
+                path: entry.path,
+                size: queue.size,
+              });
               let createdFile;
               if (
-                entry.type === "import" ||
+                (entry.type === "import" && entry.content !== null) ||
                 entry.content instanceof Readable
               ) {
-                if (entry.type === "import") {
-                  entry.content = await createReadStream(
-                    path.resolve(entry.content),
-                  );
+                let filehandle;
+                try {
+                  if (entry.type === "import") {
+                    filehandle = await open(path.resolve(entry.content), "r");
+                    entry.content = filehandle.createReadStream();
+                  }
+                  createdFile = await heliaFs.addByteStream(entry.content);
+                } catch (err) {
+                  if (typeof filehandle !== "undefined") {
+                    await filehandle.close();
+                  }
+                  throw err;
                 }
-                createdFile = await heliaFs.addByteStream(entry.content);
+                if (typeof filehandle !== "undefined") {
+                  await filehandle.close();
+                }
               } else if (entry.content !== null) {
                 createdFile = await heliaFs.addBytes(entry.content);
               } else {
                 return;
               }
               createdFiles.set(entry.path, createdFile);
+              uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
+                path: entry.path,
+                size: queue.size,
+              });
             });
           })();
+          if (queue.size > 150) {
+            while (queue.size > 100) {
+              await once(queue, "next");
+            }
+          }
           createFilePromises.push(task);
+          uploadLogger.verbose("SOURCE_IMPORT_QUEUED", {
+            path: entry.path,
+            size: queue.size,
+          });
         }
         await Promise.all(createFilePromises);
+        uploadLogger.verbose("UNIXFS_ADDED", {
+          count: createdFiles.size,
+        });
 
         const heliaMfs = mfs({
           blockstore: temporaryBlockstore,
           datastore: temporaryDatastore,
         });
-        let createdDirectories = new Set();
+        uploadLogger.verbose("MFS_ADDING", {
+          count: source.length,
+          output: temporaryCarFilePath,
+        });
         for (const entry of source) {
-          const pathsToCreate = splitPath(entry.path);
-          for (const pathToCreate of pathsToCreate) {
-            if (createdDirectories.has(pathToCreate) === false) {
-              await heliaMfs.mkdir(pathToCreate);
-              createdDirectories.add(pathToCreate);
-            }
-          }
           if (entry.content === null) {
+            uploadLogger.silly("MFS_DIR_CREATING", {
+              path: entry.path,
+            });
             await heliaMfs.mkdir(entry.path);
+            uploadLogger.verbose("MFS_DIR_CREATED", {
+              path: entry.path,
+            });
           } else {
             const entryFile = createdFiles.get(entry.path);
-            await heliaMfs.cp(entryFile, entry.path);
+            uploadLogger.silly("MFS_FILE_COPY", {
+              cid: entryFile,
+              path: entry.path,
+            });
+            await heliaMfs.cp(entryFile, entry.path, {
+              force: true,
+            });
+            uploadLogger.verbose("MFS_FILE_COPIED", {
+              cid: entryFile,
+              path: entry.path,
+            });
           }
         }
         for (const entry of source) {
           parsedEntries[entry.path] = await heliaMfs.stat(entry.path);
+          uploadLogger.silly("MFS_PATH_STAT", parsedEntries[entry.path]);
         }
         parsedEntries["/"] = await heliaMfs.stat("/");
+        const rootEntry = parsedEntries["/"];
+        uploadLogger.verbose("MFS_ADDED", {
+          root: rootEntry,
+          count: Object.keys(parsedEntries).length,
+        });
 
         // Get carFile stream here
-        const rootEntry = parsedEntries["/"];
+        uploadLogger.verbose("CAR_EXPORTING", {
+          root: rootEntry,
+        });
         const carExporter = car({ blockstore: temporaryBlockstore }),
           { writer, out } = CarWriter.create([rootEntry.cid]);
 
@@ -256,14 +319,31 @@ class ObjectManager {
         const output = createWriteStream(temporaryCarFilePath);
         Readable.from(out).pipe(output);
         await carExporter.export(rootEntry.cid, writer);
+        uploadLogger.verbose("CAR_EXPORTED", {
+          root: rootEntry,
+        });
 
         // Set Uploader to Read from carFile on disk
         uploadOptions.params.Body = createReadStream(temporaryCarFilePath);
 
         // Upload carFile via S3
+        uploadLogger.verbose("CAR_UPLOADING", {
+          entry: rootEntry,
+          source: temporaryCarFilePath,
+        });
         const parallelUploads3 = new Upload(uploadOptions);
+        parallelUploads3.on("httpUploadProgress", (progress) => {
+          uploadLogger.debug("CAR_UPLOAD_PROGRESS", progress);
+        });
         await parallelUploads3.done();
+        uploadLogger.verbose("CAR_UPLOADED", {
+          entry: rootEntry,
+          source: temporaryCarFilePath,
+        });
         await temporaryBlockstore.close();
+      } catch (err) {
+        console.error(err.message);
+        throw err;
       } finally {
         if (typeof temporaryBlockstoreDir !== "undefined") {
           // Delete Temporary Blockstore
@@ -339,7 +419,7 @@ class ObjectManager {
   /**
    * @summary Downloads an object from the specified bucket using the provided key.
    * @param {string} key - The key of the object to be downloaded.
-   * @param {objectOptions} [options] - The options for downloading the object..
+   * @param {objectOptions} [options] - The options for downloading the object.
    * @returns {Promise<Object>} - A promise that resolves with the contents of the downloaded object as a Stream.
    * @example
    * // Download object with name of `download-object-example`
@@ -457,7 +537,7 @@ class ObjectManager {
    * @returns {Promise<Boolean>} - A Promise that resolves with the result of the copy operation.
    * @example
    * // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
-   * // TIP: Set bucket on constructor and it will be used as the default source for copying objects.
+   * // TIP: Set bucket on constructor, it will be used as the default source for copying objects.
    * await objectManager.copy(`copy-object-test`, `copy-object-dest`, {
    *   sourceBucket: `copy-object-src`
    * });
@@ -484,28 +564,9 @@ class ObjectManager {
   }
 }
 
-function splitPath(inputPath) {
-  // Split the path into its components
-  const parts = inputPath.split("/");
-
-  // Initialize an empty array to hold the incremental paths
-  let incrementalPaths = [];
-
-  // Use reduce to build each part of the path incrementally
-  parts.reduce((acc, curr, index) => {
-    // Skip the first empty element due to the leading "/"
-    if (index > 0) {
-      const newPath = `${acc}/${curr}`;
-      incrementalPaths.push(newPath);
-      return newPath;
-    }
-    return acc;
-  }, "");
-
-  // Remove the last element because it's the file name, not a folder
-  incrementalPaths = incrementalPaths.slice(0, -1);
-
-  return incrementalPaths;
+// Function to count slashes in a path
+function countSlashes(path) {
+  return (path.match(/\//g) || []).length;
 }
 
 export default ObjectManager;
