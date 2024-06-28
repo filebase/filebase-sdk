@@ -255,11 +255,7 @@ class ObjectManager {
               } else {
                 let createdFile;
                 if (entry.type === "import" && entry.content !== null) {
-                  try {
-                    createdFile = await heliaFs.addByteStream(entry.content);
-                  } catch (err) {
-                    throw err;
-                  }
+                  createdFile = await heliaFs.addByteStream(entry.content);
                 } else if (entry.content !== null) {
                   createdFile = await heliaFs.addBytes(entry.content);
                 } else {
