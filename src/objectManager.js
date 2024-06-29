@@ -15,7 +15,7 @@ import { CarWriter } from "@ipld/car";
 import { car } from "@helia/car";
 import { mfs } from "@helia/mfs";
 import { unixfs } from "@helia/unixfs";
-import { MemoryBlockstore } from "blockstore-core/memory";
+import { MemoryBlockstore } from "blockstore-core";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
 import { v4 as uuidv4 } from "uuid";
