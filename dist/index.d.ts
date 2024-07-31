@@ -1,6 +1,5 @@
 import { S3Client, CreateBucketCommand, ListBucketsCommand, DeleteBucketCommand, PutBucketAclCommand, GetBucketAclCommand, HeadObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import axios from 'axios';
-import winston from 'winston';
 import { Upload } from '@aws-sdk/lib-storage';
 import { CarWriter } from '@ipld/car';
 import { car } from '@helia/car';
@@ -639,13 +638,34 @@ class NameManager {
   }
 }
 
-const { combine, timestamp, json } = winston.format;
+let logger = {
+  "debug": console.log,
+  "info": console.log,
+  "verbose": console.log,
+  "silly": console.log,
+};
+logger.child = () => {
+  return logger
+};
 
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
-  format: combine(timestamp(), json()),
-  transports: [new winston.transports.Console()],
-});
+if (isNode$1()) {
+  (async () => {
+    const winston = await import('winston');
+    const { combine, timestamp, json } = winston.format;
+    logger = winston.createLogger({
+      level:  process.env.LOG_LEVEL || "info",
+      format: combine(timestamp(), json()),
+      transports: [new winston.transports.Console()],
+    });
+  })();
+}
+
+// Function to check if the code is running in Node.js or the browser
+function isNode$1() {
+  return typeof process !== "undefined" && process.release.name === "node";
+}
+
+var logger$1 = logger;
 
 // Environment Imports
 
@@ -776,7 +796,7 @@ class ObjectManager {
   async upload(key, source, metadata, options) {
     // Generate Upload UUID
     const uploadUUID = v4();
-    const uploadLogger = logger.child({ uploadUUID });
+    const uploadLogger = logger$1.child({ uploadUUID });
 
     // Setup Upload Options
     const bucket = options?.bucket || this.#defaultBucket,

@@ -8018,13 +8018,29 @@ var NameManager = class {
 var nameManager_default = NameManager;
 
 // src/logger.js
-var import_winston = __toESM(require("winston"), 1);
-var { combine, timestamp, json } = import_winston.default.format;
-var logger = import_winston.default.createLogger({
-  level: process.env.LOG_LEVEL || "info",
-  format: combine(timestamp(), json()),
-  transports: [new import_winston.default.transports.Console()]
-});
+var logger = {
+  "debug": console.log,
+  "info": console.log,
+  "verbose": console.log,
+  "silly": console.log
+};
+logger.child = () => {
+  return logger;
+};
+if (isNode()) {
+  (async () => {
+    const winston = await import("winston");
+    const { combine, timestamp, json } = winston.format;
+    logger = winston.createLogger({
+      level: process.env.LOG_LEVEL || "info",
+      format: combine(timestamp(), json()),
+      transports: [new winston.transports.Console()]
+    });
+  })();
+}
+function isNode() {
+  return typeof process !== "undefined" && process.release.name === "node";
+}
 var logger_default = logger;
 
 // src/objectManager.js
@@ -35864,7 +35880,7 @@ var ObjectManager = class {
       let temporaryCarFilePath, temporaryBlockstoreDir;
       try {
         let temporaryBlockstore = new MemoryBlockstore(), temporaryDatastore = new MemoryDatastore();
-        if (isNode()) {
+        if (isNode2()) {
           const { mkdir: mkdir3 } = await import("fs/promises");
           const { FsBlockstore: FsBlockstore2 } = await Promise.resolve().then(() => (init_src12(), src_exports5));
           const os = await import("os");
@@ -35898,7 +35914,7 @@ var ObjectManager = class {
                 path: entry.path,
                 size: queue.size
               });
-              if (isNode()) {
+              if (isNode2()) {
                 const { Readable } = await import("stream");
                 let createdFile;
                 if (entry.type === "import" && entry.content !== null || entry.content instanceof Readable) {
@@ -36006,7 +36022,7 @@ var ObjectManager = class {
           root: rootEntry
         });
         const carExporter = car({ blockstore: temporaryBlockstore }), { writer, out } = CarWriter2.create([rootEntry.cid]);
-        if (isNode()) {
+        if (isNode2()) {
           const { createReadStream, createWriteStream } = await import("fs");
           const { Readable } = await import("stream");
           const output = createWriteStream(temporaryCarFilePath);
@@ -36035,7 +36051,7 @@ var ObjectManager = class {
         console.error(err.message);
         throw err;
       } finally {
-        if (typeof temporaryBlockstoreDir !== "undefined" && isNode()) {
+        if (typeof temporaryBlockstoreDir !== "undefined" && isNode2()) {
           const { rm: rm3 } = await import("fs/promises");
           await rm3(temporaryBlockstoreDir, { recursive: true, force: true });
         }
@@ -36217,7 +36233,7 @@ var ObjectManager = class {
 function countSlashes(path5) {
   return (path5.match(/\//g) || []).length;
 }
-function isNode() {
+function isNode2() {
   return typeof process !== "undefined" && process.release.name === "node";
 }
 var objectManager_default = ObjectManager;
