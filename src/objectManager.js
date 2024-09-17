@@ -206,7 +206,8 @@ class ObjectManager {
         });
         let createFilePromises = [];
         const queue = new PQueue({ concurrency: 50 });
-        for (const entry of source) {
+        for (let entry of source) {
+          entry.path = entry.path.startsWith("/") ? entry.path : `/${entry.path}`;
           if (entry.content === null) {
             continue;
           }
