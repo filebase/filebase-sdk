@@ -17,15 +17,9 @@ import { CarWriter } from "@ipld/car";
 import { car } from "@helia/car";
 import { mfs } from "@helia/mfs";
 import { unixfs } from "@helia/unixfs";
-import { FsBlockstore } from "blockstore-fs";
+import { MemoryBlockstore } from "blockstore-core";
 import { MemoryDatastore } from "datastore-core";
 // Utility Imports
-import { once } from "node:events";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rm, open } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
 import { downloadFromGateway } from "./helpers.js";
 import PQueue from "p-queue";
@@ -188,17 +182,23 @@ class ObjectManager {
       let temporaryCarFilePath, temporaryBlockstoreDir;
       try {
         // Setup Blockstore
-        temporaryBlockstoreDir = path.resolve(
-          os.tmpdir(),
-          "filebase-sdk",
-          "uploads",
-          uploadUUID,
-        );
-        temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`;
-        await mkdir(temporaryBlockstoreDir, { recursive: true });
-        const temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir),
+        let temporaryBlockstore = new MemoryBlockstore(),
           temporaryDatastore = new MemoryDatastore();
-
+        if (isNode()) {
+          const { mkdir } = await import("node:fs/promises");
+          const { FsBlockstore } = await import("blockstore-fs");
+          const os = await import("node:os");
+          const path = await import("node:path");
+          temporaryBlockstoreDir = path.resolve(
+            os.tmpdir(),
+            "filebase-sdk",
+            "uploads",
+            uploadUUID,
+          );
+          temporaryCarFilePath = `${temporaryBlockstoreDir}/main.car`;
+          await mkdir(temporaryBlockstoreDir, { recursive: true });
+          temporaryBlockstore = new FsBlockstore(temporaryBlockstoreDir);
+        }
         let createdFiles = new Map();
         const heliaFs = unixfs({
           blockstore: temporaryBlockstore,
@@ -218,43 +218,61 @@ class ObjectManager {
                 path: entry.path,
                 size: queue.size,
               });
-              let createdFile;
-              if (
-                (entry.type === "import" &amp;&amp; entry.content !== null) ||
-                entry.content instanceof Readable
-              ) {
-                let filehandle;
-                try {
-                  if (entry.type === "import") {
-                    filehandle = await open(path.resolve(entry.content), "r");
-                    entry.content = filehandle.createReadStream();
+
+              if (isNode()) {
+                const { Readable } = await import("node:stream");
+                let createdFile;
+                if (
+                  (entry.type === "import" &amp;&amp; entry.content !== null) ||
+                  entry.content instanceof Readable
+                ) {
+                  let filehandle;
+                  try {
+                    if (entry.type === "import") {
+                      const { open } = await import("node:fs/promises");
+                      const path = await import("node:path");
+                      filehandle = await open(path.resolve(entry.content), "r");
+                      entry.content = filehandle.createReadStream();
+                    }
+                    createdFile = await heliaFs.addByteStream(entry.content);
+                  } catch (err) {
+                    if (typeof filehandle !== "undefined") {
+                      await filehandle.close();
+                    }
+                    throw err;
                   }
-                  createdFile = await heliaFs.addByteStream(entry.content);
-                } catch (err) {
                   if (typeof filehandle !== "undefined") {
                     await filehandle.close();
                   }
-                  throw err;
+                } else if (entry.content !== null) {
+                  createdFile = await heliaFs.addBytes(entry.content);
+                } else {
+                  return;
                 }
-                if (typeof filehandle !== "undefined") {
-                  await filehandle.close();
-                }
-              } else if (entry.content !== null) {
-                createdFile = await heliaFs.addBytes(entry.content);
+                createdFiles.set(entry.path, createdFile);
+                uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
+                  path: entry.path,
+                  size: queue.size,
+                });
               } else {
-                return;
+                let createdFile;
+                if (entry.type === "import" &amp;&amp; entry.content !== null) {
+                  createdFile = await heliaFs.addByteStream(entry.content);
+                } else if (entry.content !== null) {
+                  createdFile = await heliaFs.addBytes(entry.content);
+                } else {
+                  return;
+                }
+                createdFiles.set(entry.path, createdFile);
+                uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
+                  path: entry.path,
+                  size: queue.size,
+                });
               }
-              createdFiles.set(entry.path, createdFile);
-              uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
-                path: entry.path,
-                size: queue.size,
-              });
             });
           })();
           if (queue.size > 150) {
-            while (queue.size > 100) {
-              await once(queue, "next");
-            }
+            await queue.onSizeLessThan(100);
           }
           createFilePromises.push(task);
           uploadLogger.verbose("SOURCE_IMPORT_QUEUED", {
@@ -317,16 +335,22 @@ class ObjectManager {
         const carExporter = car({ blockstore: temporaryBlockstore }),
           { writer, out } = CarWriter.create([rootEntry.cid]);
 
-        // Put carFile stream to disk
-        const output = createWriteStream(temporaryCarFilePath);
-        Readable.from(out).pipe(output);
-        await carExporter.export(rootEntry.cid, writer);
-        uploadLogger.verbose("CAR_EXPORTED", {
-          root: rootEntry,
-        });
+        if (isNode()) {
+          const { createReadStream, createWriteStream } = await import(
+            "node:fs"
+          );
+          const { Readable } = await import("node:stream");
+          // Put carFile stream to disk
+          const output = createWriteStream(temporaryCarFilePath);
+          Readable.from(out).pipe(output);
+          await carExporter.export(rootEntry.cid, writer);
+          uploadLogger.verbose("CAR_EXPORTED", {
+            root: rootEntry,
+          });
 
-        // Set Uploader to Read from carFile on disk
-        uploadOptions.params.Body = createReadStream(temporaryCarFilePath);
+          // Set Uploader to Read from carFile on disk
+          uploadOptions.params.Body = createReadStream(temporaryCarFilePath);
+        }
 
         // Upload carFile via S3
         uploadLogger.verbose("CAR_UPLOADING", {
@@ -347,7 +371,8 @@ class ObjectManager {
         console.error(err.message);
         throw err;
       } finally {
-        if (typeof temporaryBlockstoreDir !== "undefined") {
+        if (typeof temporaryBlockstoreDir !== "undefined" &amp;&amp; isNode()) {
+          const { rm } = await import("node:fs/promises");
           // Delete Temporary Blockstore
           await rm(temporaryBlockstoreDir, { recursive: true, force: true });
         }
@@ -569,6 +594,11 @@ class ObjectManager {
 // Function to count slashes in a path
 function countSlashes(path) {
   return (path.match(/\//g) || []).length;
+}
+
+// Function to check if the code is running in Node.js or the browser
+function isNode() {
+  return typeof process !== "undefined" &amp;&amp; process.release.name === "node";
 }
 
 export default ObjectManager;
