@@ -213,9 +213,8 @@ class ObjectManager {
           }
           const task = (async () => {
             await queue.add(async () => {
-              const mfsPath = entry.path.startsWith('/') ? entry.path : `/${entry.path}`;
               uploadLogger.silly("SOURCE_IMPORT_STARTED", {
-                path: mfsPath,
+                path: entry.path,
                 size: queue.size,
               });
 
@@ -249,9 +248,9 @@ class ObjectManager {
                 } else {
                   return;
                 }
-                createdFiles.set(mfsPath, createdFile);
+                createdFiles.set(entry.path, createdFile);
                 uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
-                  path: mfsPath,
+                  path: entry.path,
                   size: queue.size,
                 });
               } else {
@@ -263,9 +262,9 @@ class ObjectManager {
                 } else {
                   return;
                 }
-                createdFiles.set(mfsPath, createdFile);
+                createdFiles.set(entry.path, createdFile);
                 uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
-                  path: mfsPath,
+                  path: entry.path,
                   size: queue.size,
                 });
               }
