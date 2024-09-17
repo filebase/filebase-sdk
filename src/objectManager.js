@@ -133,7 +133,7 @@ class ObjectManager {
    * // Upload Directory
    * await objectManager.upload("my-first-directory", [
    *  {
-   *   path: "/testObjects/1.txt",
+   *   path: "/testObjects/1.txt",  // Virtual Path to store contents at within IPFS Folder/Directory
    *   content: Buffer.from("upload test object", "utf-8"),
    *  },
    *  {
@@ -212,8 +212,9 @@ class ObjectManager {
           }
           const task = (async () => {
             await queue.add(async () => {
+              const mfsPath = entry.path.startsWith('/') ? entry.path : `/${entry.path}`;
               uploadLogger.silly("SOURCE_IMPORT_STARTED", {
-                path: entry.path,
+                path: mfsPath,
                 size: queue.size,
               });
 
@@ -247,9 +248,9 @@ class ObjectManager {
                 } else {
                   return;
                 }
-                createdFiles.set(entry.path, createdFile);
+                createdFiles.set(mfsPath, createdFile);
                 uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
-                  path: entry.path,
+                  path: mfsPath,
                   size: queue.size,
                 });
               } else {
@@ -261,9 +262,9 @@ class ObjectManager {
                 } else {
                   return;
                 }
-                createdFiles.set(entry.path, createdFile);
+                createdFiles.set(mfsPath, createdFile);
                 uploadLogger.verbose("SOURCE_IMPORT_COMPLETED", {
-                  path: entry.path,
+                  path: mfsPath,
                   size: queue.size,
                 });
               }
