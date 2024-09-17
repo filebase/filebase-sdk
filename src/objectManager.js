@@ -133,7 +133,7 @@ class ObjectManager {
    * // Upload Directory
    * await objectManager.upload("my-first-directory", [
    *  {
-   *   path: "/testObjects/1.txt",
+   *   path: "/testObjects/1.txt",  // Virtual Path to store contents at within IPFS Folder/Directory
    *   content: Buffer.from("upload test object", "utf-8"),
    *  },
    *  {
@@ -206,7 +206,8 @@ class ObjectManager {
         });
         let createFilePromises = [];
         const queue = new PQueue({ concurrency: 50 });
-        for (const entry of source) {
+        for (let entry of source) {
+          entry.path = entry.path.startsWith("/") ? entry.path : `/${entry.path}`;
           if (entry.content === null) {
             continue;
           }
