@@ -157,6 +157,38 @@ test("upload directory", async () => {
   }
 });
 
+test("upload directory relative paths", async () => {
+  // Create Bucket `create-object-test-pass
+  const uploadDirectoryTestBucket = `${TEST_PREFIX}-create-directory-relative-test-pass`;
+  await createBucket(uploadDirectoryTestBucket);
+
+  try {
+    // Upload object `create-object-test`
+    const uploaded = await uploadObject(
+      uploadDirectoryTestBucket,
+      `create-directory-relative-test`,
+      [
+        {
+          path: "testObjects/1.txt",
+          content: Buffer.from("upload test object", "utf-8"),
+        },
+        {
+          path: "testObjects/deep/1.txt",
+          content: Buffer.from("upload deep test object", "utf-8"),
+        },
+        {
+          path: "topLevel.txt",
+          content: Buffer.from("upload top level test object", "utf-8"),
+        },
+      ],
+    );
+    assert.strictEqual(uploaded, true);
+    await deleteObject(uploadDirectoryTestBucket, `create-directory-relative-test`);
+  } finally {
+    await deleteBucket(uploadDirectoryTestBucket);
+  }
+});
+
 test("download object", async () => {
   // Create bucket `download-object-test-pass`
   const downloadTestBucket = `${TEST_PREFIX}-download-object-test-pass`;
