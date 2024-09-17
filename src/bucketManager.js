@@ -3,7 +3,7 @@ import {
   DeleteBucketCommand,
   GetBucketAclCommand,
   ListBucketsCommand,
-  PutBucketAclCommand,
+  PutBucketAclCommand, PutBucketTaggingCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 
@@ -129,6 +129,39 @@ class BucketManager {
         return grant.Grantee.Type === "Group" && grant.Permission === "READ";
       });
     return !(typeof readPermission !== "undefined");
+  }
+
+  /**
+   * @summary Generates the IPFS Directory/Folder CID for a given bucket
+   * @param {string} name - The name of the bucket to use.
+   * @returns {Promise<boolean>} A promise that resolves with the CID of the new directory/folder
+   */
+  async generateCid(name) {
+    const command = new PutBucketTaggingCommand({
+      Bucket: name,
+      Tagging: {
+        TagSet: [
+          {
+            Key: "generateBucketCid",
+            Value: "true"
+          }
+        ]
+      }
+    });
+
+    let cid = false;
+    command.middlewareStack.add(
+      (next) => async (args) => {
+        const response = await next(args);
+
+        // Get cid from headers
+        cid = response.response.headers["x-amz-meta-cid"];
+        return response;
+      }
+    );
+
+    await this.#client.send(command);
+    return cid;
   }
 }
 

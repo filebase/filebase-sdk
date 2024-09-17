@@ -30,6 +30,29 @@ test("create bucket", async () => {
   }
 });
 
+test("generate bucket cid", async () => {
+  // Initialize BucketManager
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
+  );
+
+  // Create bucket `create-bucket-test-pass`
+  const bucketNameToGenerate = `${TEST_PREFIX}-generate-bucket-test-pass`;
+  await bucketManager.create(bucketNameToGenerate);
+
+  try {
+    // Generate bucket CID
+    const generatedCid = await bucketManager.generateCid(bucketNameToGenerate);
+
+    // Assert new bucket exists
+    assert.equal(generatedCid, "bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354");
+  } finally {
+    // Delete new bucket
+    await bucketManager.delete(bucketNameToGenerate);
+  }
+});
+
 test("list buckets", async () => {
   const testBucketName = `${TEST_PREFIX}-list-bucket-test-pass`,
     bucketManager = new BucketManager(
