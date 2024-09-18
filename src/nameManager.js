@@ -48,6 +48,8 @@ class NameManager {
   /**
    * @typedef {Object} nameOptions
    * @property {boolean} [enabled] Whether the name is enabled or not.
+   * @property {number} [ttl] Seconds for the Browser and IPFS Nodes to Cache the IPNS Record
+   * @property {number} [validity] Seconds for the DHT record to be valid.
    */
 
   /**
@@ -68,13 +70,20 @@ class NameManager {
     },
   ) {
     try {
+      let createData = {
+        label,
+        cid,
+        enabled: options?.enabled !== false,
+      }
+      if (options?.validity) {
+        createData.validity = options.validity;
+      }
+      if (options?.ttl) {
+        createData.ttl = options.ttl;
+      }
       const createResponse = await this.#client.request({
         method: "POST",
-        data: {
-          label,
-          cid,
-          enabled: options?.enabled !== false,
-        },
+        data: createData,
       });
       return createResponse.data;
     } catch (err) {
@@ -107,14 +116,21 @@ class NameManager {
     },
   ) {
     try {
+      let importData = {
+        label,
+        cid,
+        network_private_key: privateKey,
+        enabled: options?.enabled !== false,
+      }
+      if (options?.validity) {
+        importData.validity = options.validity;
+      }
+      if (options?.ttl) {
+        importData.ttl = options.ttl;
+      }
       const importResponse = await this.#client.request({
         method: "POST",
-        data: {
-          label,
-          cid,
-          network_private_key: privateKey,
-          enabled: options?.enabled !== false,
-        },
+        data: importData,
       });
       return importResponse.data;
     } catch (err) {
@@ -138,6 +154,12 @@ class NameManager {
       const updateOptions = {
         cid,
       };
+      if (options?.validity) {
+        updateOptions.validity = options.validity;
+      }
+      if (options?.ttl) {
+        updateOptions.ttl = options.ttl;
+      }
       if (options?.enabled) {
         updateOptions.enabled = Boolean(options.enabled);
       }
