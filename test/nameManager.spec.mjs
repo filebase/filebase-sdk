@@ -23,7 +23,10 @@ test("create name", async () => {
       process.env.TEST_NAME_KEY || process.env.TEST_KEY,
       process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
     ),
-    createdName = await nameManager.create(testNameLabel, TEST_CID);
+    createdName = await nameManager.create(testNameLabel, TEST_CID, {
+      ttl: 9000,
+      validity: 86400
+    });
   await nameManager.delete(testNameLabel);
   assert.strictEqual(createdName.label, testNameLabel);
   assert.strictEqual(createdName.cid, TEST_CID);
