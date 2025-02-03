@@ -76,7 +76,7 @@ test("list bucket cid", async () => {
       listedBucket = bucketsList.find((element) => {
         return element.Name === bucketNameToGenerate;
       }),
-      listedBucketCid = listedBucket.CID()
+      listedBucketCid = await listedBucket.CID()
 
     // Assert listed CID
     assert.equal(listedBucketCid, "bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354");
