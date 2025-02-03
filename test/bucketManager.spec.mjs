@@ -106,7 +106,7 @@ test("list bucket without cid", async () => {
       listedBucketCid = await listedBucket.CID()
 
     // Assert listed CID
-    assert.equal(listedBucketCid, "");
+    assert.equal(listedBucketCid, undefined);
   } finally {
     // Delete new bucket
     await bucketManager.delete(bucketNameToGenerate);
