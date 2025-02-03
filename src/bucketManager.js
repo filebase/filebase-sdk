@@ -1,7 +1,7 @@
 import {
   CreateBucketCommand,
   DeleteBucketCommand,
-  GetBucketAclCommand,
+  GetBucketAclCommand, GetBucketTaggingCommand,
   ListBucketsCommand,
   PutBucketAclCommand, PutBucketTaggingCommand,
   S3Client,
@@ -43,7 +43,8 @@ class BucketManager {
   /**
    * @typedef {Object} bucket
    * @property {string} Name The name of the bucket
-   * @property {date} Date the bucket was created
+   * @property {date} Date Date the bucket was created
+   * @property {function} CID Function to retrieve current CID of bucket
    */
 
   /**
@@ -72,6 +73,24 @@ class BucketManager {
   async list() {
     const command = new ListBucketsCommand({}),
       { Buckets } = await this.#client.send(command);
+
+    for (const bucket of Buckets) {
+      bucket.CID = async () => {
+        const getCidCommand = new GetBucketTaggingCommand({
+          Bucket: bucket.Name,
+        });
+        const getCidResponse = await this.#client.send(getCidCommand)
+        if (typeof getCidResponse !== "undefined" && getCidResponse.TagSet !== "undefined") {
+          const resolvedTag = getCidResponse.TagSet.find((element) => {
+            return element.Key === "CID"
+          });
+          if (typeof resolvedTag !== "undefined" && resolvedTag.Value !== "") {
+            return resolvedTag.Value;
+          }
+        }
+        return undefined;
+      }
+    }
 
     return Buckets;
   }

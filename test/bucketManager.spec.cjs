@@ -53,6 +53,66 @@ test("generate bucket cid", async () => {
   }
 });
 
+test("list bucket cid", async () => {
+  // Initialize BucketManager
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
+  );
+
+  // Create bucket `create-bucket-test-pass`
+  const bucketNameToGenerate = `${TEST_PREFIX}-list-bucket-cid-test-pass`;
+  await bucketManager.create(bucketNameToGenerate);
+
+  try {
+    // Generate bucket CID
+    const generatedCid = await bucketManager.generateCid(bucketNameToGenerate);
+
+    // Assert new bucket exists
+    assert.equal(generatedCid, "bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354");
+
+    // List buckets
+    const bucketsList = await bucketManager.list(),
+      listedBucket = bucketsList.find((element) => {
+        return element.Name === bucketNameToGenerate;
+      }),
+      listedBucketCid = listedBucket.CID()
+
+    // Assert listed CID
+    assert.equal(listedBucketCid, "bafybeiczsscdsbs7ffqz55asqdf3smv6klcw3gofszvwlyarci47bgf354");
+  } finally {
+    // Delete new bucket
+    await bucketManager.delete(bucketNameToGenerate);
+  }
+});
+
+test("list bucket without cid", async () => {
+  // Initialize BucketManager
+  const bucketManager = new BucketManager(
+    process.env.TEST_S3_KEY || process.env.TEST_KEY,
+    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
+  );
+
+  // Create bucket `create-bucket-test-pass`
+  const bucketNameToGenerate = `${TEST_PREFIX}-list-bucket-without-cid-test-pass`;
+  await bucketManager.create(bucketNameToGenerate);
+
+  try {
+    // List buckets
+    const bucketsList = await bucketManager.list(),
+      listedBucket = bucketsList.find((element) => {
+        return element.Name === bucketNameToGenerate;
+      }),
+      listedBucketCid = await listedBucket.CID()
+
+    // Assert listed CID
+    assert.equal(listedBucketCid, "");
+  } finally {
+    // Delete new bucket
+    await bucketManager.delete(bucketNameToGenerate);
+  }
+});
+
 test("list buckets", async () => {
   const testBucketName = `${TEST_PREFIX}-list-bucket-test-pass`,
     bucketManager = new BucketManager(
