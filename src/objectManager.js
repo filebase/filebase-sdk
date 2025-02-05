@@ -98,6 +98,7 @@ class ObjectManager {
   /**
    * @typedef {Object} objectOptions
    * @property {string} [bucket] - The bucket to pin the IPFS CID into.
+   * @property {string} [contentType] - The content type to set on the object
    */
 
   /**
@@ -164,6 +165,10 @@ class ObjectManager {
         queueSize: this.#maxConcurrentUploads,
         partSize: 26843546, //25.6Mb || 250Gb Max File Size
       };
+
+    if (typeof options.contentType !== "undefined") {
+      uploadOptions.params.ContentType = options.contentType;
+    }
 
     // Pack Multiple Files into CAR file for upload
     let parsedEntries = {};
