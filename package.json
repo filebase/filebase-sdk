@@ -44,7 +44,7 @@
     "clean-jsdoc-theme": "4.2.17",
     "jsdoc": "4.0.2",
     "prettier": "3.1.0",
-    "tsup": "8.0.1",
+    "tsup": "8.4.0",
     "typescript": "5.3.3"
   },
   "dependencies": {
@@ -54,7 +54,7 @@
     "@helia/mfs": "3.0.1",
     "@helia/unixfs": "1.4.3",
     "@ipld/car": "5.2.4",
-    "axios": "1.6.2",
+    "axios": "1.8.4",
     "blockstore-fs": "1.1.10",
     "blockstore-core": "4.4.1",
     "datastore-core": "9.2.9",
