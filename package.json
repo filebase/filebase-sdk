@@ -1,6 +1,6 @@
 {
   "name": "@filebase/sdk",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "SDK for Interacting with Filebase Services [S3(Buckets, Objects), IPFS(Gateways, Pins) IPNS(Names)]",
   "repository": {
     "type": "git",
@@ -38,28 +38,23 @@
     "ipns",
     "sdk",
     "web3",
-    "distributed"
+    "distributed",
+    "decentralized"
   ],
   "devDependencies": {
     "clean-jsdoc-theme": "4.2.17",
     "jsdoc": "4.0.2",
-    "prettier": "3.1.0",
+    "prettier": "3.6.2",
     "tsup": "8.0.1",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "uuid": "11.1.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.478.0",
-    "@aws-sdk/lib-storage": "3.478.0",
-    "@helia/car": "1.0.4",
-    "@helia/mfs": "3.0.1",
-    "@helia/unixfs": "1.4.3",
-    "@ipld/car": "5.2.4",
-    "axios": "1.6.2",
-    "blockstore-fs": "1.1.10",
-    "blockstore-core": "4.4.1",
-    "datastore-core": "9.2.9",
-    "p-queue": "8.0.1",
-    "uuid": "9.0.1",
+    "@aws-sdk/client-s3": "3.842.0",
+    "@aws-sdk/s3-request-presigner": "3.844.0",
+    "axios": "1.10.0",
+    "ipns": "10.1.2",
+    "kubo-rpc-client": "5.2.0",
     "winston": "3.12.0"
   }
 }
