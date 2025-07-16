@@ -14,7 +14,8 @@
     ".": {
       "require": "./dist/index.js",
       "import": "./src/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "fallback": "./dist/index.js"
     }
   },
   "files": [
@@ -55,6 +56,7 @@
     "axios": "1.10.0",
     "ipns": "10.1.2",
     "kubo-rpc-client": "5.2.0",
+    "undici": "7.11.0",
     "winston": "3.12.0"
   }
 }

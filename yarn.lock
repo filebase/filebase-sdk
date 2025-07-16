@@ -3279,6 +3279,11 @@ undici-types@~7.8.0:
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-7.8.0.tgz"
   integrity sha512-9UJ2xGDvQ43tYyVMpuHlsgApydB8ZKfVYTsLDhXkFL/6gfkp+U8xTGdh8pMJv1SpZna0zxG1DwsKZsreLbXBxw==
 
+undici@7.11.0:
+  version "7.11.0"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-7.11.0.tgz#8e13a54f62afa756666c0590c38b3866e286d0b3"
+  integrity sha512-heTSIac3iLhsmZhUCjyS3JQEkZELateufzZuBaVM5RHXdSBMb1LPMQf5x+FH7qjsZYDP0ttAc3nnVpUB+wYbOg==
+
 universalify@^2.0.0:
   version "2.0.1"
   resolved "https://registry.npmjs.org/universalify/-/universalify-2.0.1.tgz"
