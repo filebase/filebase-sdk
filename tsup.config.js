@@ -2,19 +2,12 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: ["src/index.js"],
-  splitting: false,
-  sourcemap: false,
-  noExternal: [
-    "@ipld/car",
-    "@helia/car",
-    "@helia/unixfs",
-    "@helia/mfs",
-    "blockstore-core",
-    "blockstore-fs",
-    "datastore-core",
-    "p-queue",
-  ],
+  format: ["cjs", 'esm'],
   dts: true,
-  format: ["cjs"],
   clean: true,
+  sourcemap: true,
+  minify: true,
+  bundle: true,
+  target: ['es2020', 'node21'],
+  platform: "neutral",
 });

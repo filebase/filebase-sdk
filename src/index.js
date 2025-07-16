@@ -177,20 +177,6 @@ class FilebaseClient {
   }
 
   /**
-   * @summary Lists the buckets in the client.
-   * @returns {Promise<Array<bucket>>} - A promise that resolves with an array of objects representing the buckets in the client.
-   * @example
-   * // List all buckets
-   * await client.listBuckets();
-   */
-  async listBuckets() {
-    const command = new ListBucketsCommand({}),
-      { Buckets } = await this.#s3_client.send(command);
-
-    return Buckets;
-  }
-
-  /**
    * @summary Deletes the specified bucket.
    * @param {string} name - The name of the bucket to delete.
    * @returns {Promise<boolean>} - A promise that resolves when the bucket is deleted.
@@ -256,87 +242,23 @@ class FilebaseClient {
     }
     throw new Error(`Failed to Fetch CID for Bucket`);
   }
+
+  /**
+   * @summary Lists the buckets in the client.
+   * @returns {Promise<Array<bucket>>} - A promise that resolves with an array of objects representing the buckets in the client.
+   * @example
+   * // List all buckets
+   * await client.listBuckets();
+   */
+  async listBuckets() {
+    const command = new ListBucketsCommand({}),
+      { Buckets } = await this.#s3_client.send(command);
+
+    return Buckets;
+  }
   //endregion
 
   //region File Methods
-  async uploadDirectory(path, sourceDirectory, options = {}) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    const importOptions = {};
-    if (options?.includeHiddenFiles === true) {
-      importOptions["hidden"] = true;
-      delete options["includeHiddenFiles"];
-    }
-    const uploadResults = [];
-    for await (const uploadResult of this.#ipfs_client.addAll(
-      globSource(path, "*", importOptions),
-      options,
-    )) {
-      uploadResults.push(uploadResult);
-    }
-    return uploadResults;
-  }
-
-  async uploadFile(path, content, options = {}) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers = options.headers || {};
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    options.searchParams = options.searchParams || {};
-    options.searchParams["preserve-filenames"] = "true";
-    return await this.#ipfs_client.add(
-      {
-        path,
-        content,
-      },
-      options,
-    );
-  }
-
-  async uploadFiles(fileStream, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    const uploadResults = [];
-    for await (const uploadResult of this.#ipfs_client.addAll(
-      fileStream,
-      options,
-    )) {
-      uploadResults.push(uploadResult);
-    }
-    return uploadResults;
-  }
-
-  pinFile(ipfsPath, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    return this.#ipfs_client.pin.add(ipfsPath, options);
-  }
-
-  pinFiles(source, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    return this.#ipfs_client.pin.addAll(source, options);
-  }
-
-  async downloadFile(path, options) {
-    const command = new GetObjectCommand({
-        Bucket: options?.bucket || this.#default_bucket,
-        Key: path,
-      }),
-      response = await this.#s3_client.send(command);
-
-    return response.Body;
-  }
-
-  async deleteFile(path, options) {
-    const command = new DeleteObjectCommand({
-      Bucket: options?.bucket || this.#default_bucket,
-      Key: path,
-    });
-
-    await this.#s3_client.send(command);
-    return true;
-  }
-
   async copyFile(from, to, options) {
     const copySource = `${
         options?.sourceBucket || this.#default_bucket
@@ -349,6 +271,76 @@ class FilebaseClient {
 
     await this.#s3_client.send(command);
     return true;
+  }
+
+  async deleteFile(path, options) {
+    const command = new DeleteObjectCommand({
+      Bucket: options?.bucket || this.#default_bucket,
+      Key: path,
+    });
+
+    await this.#s3_client.send(command);
+    return true;
+  }
+
+  async downloadFile(path, options) {
+    const command = new GetObjectCommand({
+        Bucket: options?.bucket || this.#default_bucket,
+        Key: path,
+      }),
+      response = await this.#s3_client.send(command);
+
+    return response.Body;
+  }
+
+  async generatePresignedUrl(objectKey, expiresInSeconds = 3600, options) {
+    const command = new GetObjectCommand({
+      Bucket: options?.bucket || this.#default_bucket,
+      Key: objectKey,
+    });
+
+    try {
+      return await getSignedUrl(this.#s3_client, command, {
+        expiresIn: expiresInSeconds, // URL valid for 1 hour by default
+      });
+    } catch (error) {
+      console.error("Error generating presigned download URL:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * @typedef {Object} objectOptions
+   * @property {string} [bucket] - The bucket to pin the IPFS CID into.
+   */
+
+  /**
+   * @typedef {Object} objectHeadResult
+   * @property {string} cid The CID of the uploaded object
+   * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
+   * @property {string} entries.cid The CID of the uploaded object
+   * @property {string} entries.path The path of the object
+   */
+
+  /**
+   * @summary Gets an objects info and metadata using the S3 API.
+   * @param {string} path - The key of the object to be inspected.
+   * @param {objectOptions} [options] - The options for inspecting the object.
+   * @returns {Promise<objectHeadResult|false>}
+   */
+  async getFileMetadata(path, options) {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: options?.bucket || this.#default_bucket,
+        Key: path,
+      });
+      return await this.#s3_client.send(command);
+    } catch (err) {
+      if (err.name === "NotFound") {
+        return false;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -429,54 +421,63 @@ class FilebaseClient {
     return listResponse;
   }
 
-  /**
-   * @typedef {Object} objectOptions
-   * @property {string} [bucket] - The bucket to pin the IPFS CID into.
-   */
-
-  /**
-   * @typedef {Object} objectHeadResult
-   * @property {string} cid The CID of the uploaded object
-   * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
-   * @property {string} entries.cid The CID of the uploaded object
-   * @property {string} entries.path The path of the object
-   */
-
-  /**
-   * @summary Gets an objects info and metadata using the S3 API.
-   * @param {string} path - The key of the object to be inspected.
-   * @param {objectOptions} [options] - The options for inspecting the object.
-   * @returns {Promise<objectHeadResult|false>}
-   */
-  async getFileMetadata(path, options) {
-    try {
-      const command = new HeadObjectCommand({
-        Bucket: options?.bucket || this.#default_bucket,
-        Key: path,
-      });
-      return await this.#s3_client.send(command);
-    } catch (err) {
-      if (err.name === "NotFound") {
-        return false;
-      }
-      throw err;
-    }
+  pinFile(ipfsPath, options) {
+    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
+    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
+    return this.#ipfs_client.pin.add(ipfsPath, options);
   }
 
-  async generatePresignedUrl(objectKey, expiresInSeconds = 3600, options) {
-    const command = new GetObjectCommand({
-      Bucket: options?.bucket || this.#default_bucket,
-      Key: objectKey,
-    });
+  pinFiles(source, options) {
+    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
+    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
+    return this.#ipfs_client.pin.addAll(source, options);
+  }
 
-    try {
-      return await getSignedUrl(this.#s3_client, command, {
-        expiresIn: expiresInSeconds, // URL valid for 1 hour by default
-      });
-    } catch (error) {
-      console.error("Error generating presigned download URL:", error);
-      throw error;
+  async uploadDirectory(path, sourceDirectory, options = {}) {
+    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
+    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
+    options.searchParams["directory-name"] = path;
+    const importOptions = {};
+    if (options?.includeHiddenFiles === true) {
+      importOptions["hidden"] = true;
+      delete options["includeHiddenFiles"];
     }
+    const uploadResults = [];
+    for await (const uploadResult of this.#ipfs_client.addAll(
+      globSource(path, "*", importOptions),
+      options,
+    )) {
+      uploadResults.push(uploadResult);
+    }
+    return uploadResults;
+  }
+
+  async uploadFile(path, content, options = {}) {
+    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
+    options.headers = options.headers || {};
+    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
+    options.searchParams = options.searchParams || {};
+    options.searchParams["preserve-filenames"] = "true";
+    return await this.#ipfs_client.add(
+      {
+        path,
+        content,
+      },
+      options,
+    );
+  }
+
+  async uploadFiles(fileStream, options) {
+    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
+    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
+    const uploadResults = [];
+    for await (const uploadResult of this.#ipfs_client.addAll(
+      fileStream,
+      options,
+    )) {
+      uploadResults.push(uploadResult);
+    }
+    return uploadResults;
   }
   //endregion
 
@@ -525,6 +526,29 @@ class FilebaseClient {
         },
       });
       return createResponse.data;
+    } catch (err) {
+      this.#apiErrorHandler(err);
+    }
+  }
+
+  /**
+   * @summary Deletes an IPNS name with the given label.
+   * @param {string} label - The label of the IPNS name to delete.
+   * @returns {Promise<boolean>} - A promise that resolves to true if the IPNS name was successfully deleted.
+   * @example
+   * // List IPNS name with label of `delete-name-example`
+   * await client.deleteIpnsName(`delete-name-example`);
+   */
+  async deleteIpnsName(label) {
+    try {
+      await this.#names_client.request({
+        method: "DELETE",
+        url: `/${label}`,
+        validateStatus: (status) => {
+          return status === 204;
+        },
+      });
+      return true;
     } catch (err) {
       this.#apiErrorHandler(err);
     }
@@ -594,6 +618,36 @@ class FilebaseClient {
   }
 
   /**
+   * @summary Returns a list of IPNS names
+   * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
+   * @example
+   * // List all IPNS names
+   * await client.listIpnsNames();
+   */
+  async listIpnsNames() {
+    try {
+      const listResponse = await this.#names_client.request({
+        method: "GET",
+      });
+      return listResponse.data;
+    } catch (err) {
+      this.#apiErrorHandler(err);
+    }
+  }
+
+  async resolveIpnsName(value) {
+    try {
+      const resolvedIpnsName = await this.#fetchIpnsRecord(value);
+      const buf = Buffer.from(resolvedIpnsName);
+      const body = new Uint8Array(buf, 0, buf.byteLength);
+      const ipnsRecord = unmarshalIPNSRecord(body);
+      return ipnsRecord.value;
+    } catch (err) {
+      this.#apiErrorHandler(err);
+    }
+  }
+
+  /**
    * @summary Updates the specified name with the given CID.
    * @param {string} label - The label of the name to update.
    * @param {string} cid - The cid to associate with the name.
@@ -618,59 +672,6 @@ class FilebaseClient {
         data: updateOptions,
         validateStatus: (status) => {
           return status === 200;
-        },
-      });
-      return true;
-    } catch (err) {
-      this.#apiErrorHandler(err);
-    }
-  }
-
-  async resolveIpnsName(value) {
-    try {
-      const resolvedIpnsName = await this.#fetchIpnsRecord(value);
-      const buf = Buffer.from(resolvedIpnsName);
-      const body = new Uint8Array(buf, 0, buf.byteLength);
-      const ipnsRecord = unmarshalIPNSRecord(body);
-      return ipnsRecord.value;
-    } catch (err) {
-      this.#apiErrorHandler(err);
-    }
-  }
-
-  /**
-   * @summary Returns a list of IPNS names
-   * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
-   * @example
-   * // List all IPNS names
-   * await client.listIpnsNames();
-   */
-  async listIpnsNames() {
-    try {
-      const listResponse = await this.#names_client.request({
-        method: "GET",
-      });
-      return listResponse.data;
-    } catch (err) {
-      this.#apiErrorHandler(err);
-    }
-  }
-
-  /**
-   * @summary Deletes an IPNS name with the given label.
-   * @param {string} label - The label of the IPNS name to delete.
-   * @returns {Promise<boolean>} - A promise that resolves to true if the IPNS name was successfully deleted.
-   * @example
-   * // List IPNS name with label of `delete-name-example`
-   * await client.deleteIpnsName(`delete-name-example`);
-   */
-  async deleteIpnsName(label) {
-    try {
-      await this.#names_client.request({
-        method: "DELETE",
-        url: `/${label}`,
-        validateStatus: (status) => {
-          return status === 204;
         },
       });
       return true;
@@ -735,6 +736,29 @@ class FilebaseClient {
   }
 
   /**
+   * @summary Deletes a gateway with the given name.
+   * @param {string} name - The name of the gateway to delete.
+   * @returns {Promise<boolean>} - A promise that resolves to true if the gateway was successfully deleted.
+   * @example
+   * // Delete gateway with name of `delete-gateway-example`
+   * await client.deleteGateway(`delete-name-example`);
+   */
+  async deleteGateway(name) {
+    try {
+      await this.#gateways_client.request({
+        method: "DELETE",
+        url: `/${name}`,
+        validateStatus: (status) => {
+          return status === 204;
+        },
+      });
+      return true;
+    } catch (err) {
+      this.#apiErrorHandler(err);
+    }
+  }
+
+  /**
    * @summary Returns the value of a gateway
    * @param {string} name - Parameter representing the name to get.
    * @returns {Promise<gateway|false>} - A promise that resolves to the value of a gateway.
@@ -770,29 +794,6 @@ class FilebaseClient {
         method: "GET",
       });
       return getResponse.data;
-    } catch (err) {
-      this.#apiErrorHandler(err);
-    }
-  }
-
-  /**
-   * @summary Deletes a gateway with the given name.
-   * @param {string} name - The name of the gateway to delete.
-   * @returns {Promise<boolean>} - A promise that resolves to true if the gateway was successfully deleted.
-   * @example
-   * // Delete gateway with name of `delete-gateway-example`
-   * await client.deleteGateway(`delete-name-example`);
-   */
-  async deleteGateway(name) {
-    try {
-      await this.#gateways_client.request({
-        method: "DELETE",
-        url: `/${name}`,
-        validateStatus: (status) => {
-          return status === 204;
-        },
-      });
-      return true;
     } catch (err) {
       this.#apiErrorHandler(err);
     }
@@ -840,20 +841,6 @@ class FilebaseClient {
   //endregion
 
   //region Content Fetch Methods
-  async fetchContentByCid(cid, options = {}) {
-    return this.#fetchContentFromGateway(cid, "ipfs", options);
-  }
-
-  async fetchContentByIpnsName(cid, options = {}) {
-    return this.#fetchContentFromGateway(cid, "ipns", options);
-  }
-
-  async #fetchIpnsRecord(cid) {
-    return this.#fetchContentFromGateway(cid, "ipns", {
-      format: "ipns-record",
-    });
-  }
-
   async #fetchContentFromGateway(cid, resolver, options) {
     const selectedEndpoint = options?.endpoint || this.#default_gateway;
     if (typeof selectedEndpoint !== "string") {
@@ -885,6 +872,20 @@ class FilebaseClient {
       timeout: options?.timeout || this.#GATEWAY_DEFAULT_TIMEOUT,
     });
     return downloadResponse.data;
+  }
+
+  async #fetchIpnsRecord(cid) {
+    return this.#fetchContentFromGateway(cid, "ipns", {
+      format: "ipns-record",
+    });
+  }
+
+  async fetchContentByCid(cid, options = {}) {
+    return this.#fetchContentFromGateway(cid, "ipfs", options);
+  }
+
+  async fetchContentByIpnsName(cid, options = {}) {
+    return this.#fetchContentFromGateway(cid, "ipns", options);
   }
   //endregion
 }
