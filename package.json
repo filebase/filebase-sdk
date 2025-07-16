@@ -12,22 +12,17 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "import": "./src/index.js",
       "types": "./dist/index.d.ts",
-      "fallback": "./dist/index.js"
+      "require": "./dist/index.js",
+      "import": "./src/index.js"
     }
   },
   "files": [
     "dist",
     "src"
   ],
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  },
   "scripts": {
-    "build": "tsup src/index.js --format cjs --dts --clean",
+    "build": "tsup src/index.js",
     "test": "node --test",
     "doc": "jsdoc -c jsdoc.json"
   },
@@ -43,20 +38,17 @@
     "decentralized"
   ],
   "devDependencies": {
-    "clean-jsdoc-theme": "4.2.17",
-    "jsdoc": "4.0.2",
+    "clean-jsdoc-theme": "4.3.0",
+    "jsdoc": "4.0.4",
     "prettier": "3.6.2",
-    "tsup": "8.0.1",
-    "typescript": "5.3.3",
+    "tsup": "8.5.0",
+    "typescript": "5.8.3",
     "uuid": "11.1.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.842.0",
     "@aws-sdk/s3-request-presigner": "3.844.0",
     "axios": "1.10.0",
-    "ipns": "10.1.2",
-    "kubo-rpc-client": "5.2.0",
-    "undici": "7.11.0",
-    "winston": "3.12.0"
+    "ipns": "10.1.2"
   }
 }

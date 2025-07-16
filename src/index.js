@@ -13,10 +13,10 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { create, globSource } from "kubo-rpc-client";
 import { unmarshalIPNSRecord } from "ipns";
 
 class FilebaseClient {
+  #DEFAULT_IPFS_TIMEOUT = 60000;
   #DEFAULT_IPFS_ENDPOINT = "https://rpc.filebase.io";
   #DEFAULT_S3_ENDPOINT = "https://s3.filebase.com";
   #DEFAULT_REGION = "us-east-1";
@@ -80,10 +80,18 @@ class FilebaseClient {
       ipfsCredentials = `${ipfsCredentials}:${options.bucket}`;
       this.#default_bucket = options.bucket;
     }
-    this.#ipfs_client = create({
-      url: ipfsEndpoint,
+    this.#ipfs_client = axios.create({
+      baseURL: ipfsEndpoint,
+      timeout: options?.timeout || this.#DEFAULT_IPFS_TIMEOUT,
       headers: {
-        Authorization: `Bearer ${Buffer.from(ipfsCredentials).toString("base64")}`,
+        common: {
+          Authorization: `Bearer ${Buffer.from(ipfsCredentials).toString("base64")}`,
+        },
+      },
+      method: "POST",
+      responseType: "text",
+      validateStatus: function (status) {
+        return status === 200;
       },
     });
     //endregion
@@ -92,12 +100,12 @@ class FilebaseClient {
     const gatewayClientEndpoint =
       process.env.NODE_ENV === "test"
         ? process.env.TEST_GW_ENDPOINT ||
-        options?.gateway?.endpoint ||
-        this.#DEFAULT_ENDPOINT
+          options?.gateway?.endpoint ||
+          this.#DEFAULT_ENDPOINT
         : options?.gateway?.endpoint || this.#DEFAULT_ENDPOINT;
     this.#gateways_client = axios.create({
       baseURL: `${gatewayClientEndpoint}/v1/gateways`,
-      timeout: this.#DEFAULT_TIMEOUT,
+      timeout: options?.timeout || this.#GATEWAY_DEFAULT_TIMEOUT,
       headers: {
         common: {
           Authorization: `Bearer ${Buffer.from(this.#ipfs_credentials).toString("base64")}`,
@@ -133,8 +141,8 @@ class FilebaseClient {
     ) {
       throw new Error(
         err.response.data.error?.details ||
-        err.response.data.error?.reason ||
-        err,
+          err.response.data.error?.reason ||
+          err,
       );
     }
     throw err;
@@ -259,6 +267,31 @@ class FilebaseClient {
   //endregion
 
   //region File Methods
+  async #uploadFiles(formData, options) {
+    options.headers = options.headers || {};
+    options.headers["Authorization"] =
+      `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
+    options.searchParams = options.searchParams || {};
+    options.searchParams["preserve-filenames"] = "true";
+
+    const downloadResponse = await axios.request({
+      url: "api/v0/add",
+      headers: options.headers,
+      params: options.searchParams,
+    });
+
+    const pins = [];
+    for (const entry of downloadResponse.data.split("\n")) {
+      const parsedEntry = JSON.parse(entry);
+      pins.push({
+        name: parsedEntry["Name"],
+        cid: parsedEntry["Hash"],
+        size: parsedEntry["Size"],
+      });
+    }
+    return pins;
+  }
+
   async copyFile(from, to, options) {
     const copySource = `${
         options?.sourceBucket || this.#default_bucket
@@ -421,63 +454,53 @@ class FilebaseClient {
     return listResponse;
   }
 
-  pinFile(ipfsPath, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    return this.#ipfs_client.pin.add(ipfsPath, options);
+  async pinFile(path, cid, options) {
+    await axios.request({
+      url: "api/v0/pin/add",
+      headers: {
+        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
+      },
+      params: {
+        name: path,
+        arg: cid,
+      },
+    });
+    return true;
   }
 
-  pinFiles(source, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    return this.#ipfs_client.pin.addAll(source, options);
-  }
-
-  async uploadDirectory(path, sourceDirectory, options = {}) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    options.searchParams["directory-name"] = path;
-    const importOptions = {};
-    if (options?.includeHiddenFiles === true) {
-      importOptions["hidden"] = true;
-      delete options["includeHiddenFiles"];
-    }
-    const uploadResults = [];
-    for await (const uploadResult of this.#ipfs_client.addAll(
-      globSource(path, "*", importOptions),
-      options,
-    )) {
-      uploadResults.push(uploadResult);
-    }
-    return uploadResults;
+  async uploadDirectory(path, formData, options = {}) {
+    const uploadedFiles = await this.#uploadFiles(formData, {
+      headers: {
+        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
+      },
+      params: {
+        "directory-name": path,
+        "wrap-with-directory": "true",
+      },
+    });
+    return uploadedFiles[0];
   }
 
   async uploadFile(path, content, options = {}) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers = options.headers || {};
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    options.searchParams = options.searchParams || {};
-    options.searchParams["preserve-filenames"] = "true";
-    return await this.#ipfs_client.add(
-      {
-        path,
-        content,
-      },
-      options,
-    );
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", content, path);
+
+    const uploadedFiles = await this.uploadFiles(uploadFormData, options);
+    return uploadedFiles[0];
   }
 
-  async uploadFiles(fileStream, options) {
+  async uploadFiles(formData, options) {
     let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    options.headers["Authorization"] = `Bearer ${encodedCredentials}`;
-    const uploadResults = [];
-    for await (const uploadResult of this.#ipfs_client.addAll(
-      fileStream,
-      options,
-    )) {
-      uploadResults.push(uploadResult);
-    }
-    return uploadResults;
+    const uploadOptions = {
+      headers: {
+        Authorization: `Bearer ${encodedCredentials}`,
+      },
+      params: {
+        "preserve-filenames": "true",
+      },
+    };
+
+    return await this.#uploadFiles(formData, uploadOptions);
   }
   //endregion
 

@@ -290,23 +290,26 @@ test("upload directory", async () => {
 
   try {
     // Upload object `create-object-test`
+    const uploadForm = new FormData();
+    uploadForm.append(
+      "file",
+      Buffer.from("upload test object", "utf-8"),
+      "/testObjects/1.txt",
+    );
+    uploadForm.append(
+      "file",
+      Buffer.from("upload deep test object", "utf-8"),
+      "/testObjects/deep/1.txt",
+    );
+    uploadForm.append(
+      "file",
+      Buffer.from("upload top level test object", "utf-8"),
+      "/topLevel.txt",
+    );
     const uploaded = await uploadObjects(
       uploadDirectoryTestBucket,
       `create-directory-test`,
-      [
-        {
-          path: "/testObjects/1.txt",
-          content: Buffer.from("upload test object", "utf-8"),
-        },
-        {
-          path: "/testObjects/deep/1.txt",
-          content: Buffer.from("upload deep test object", "utf-8"),
-        },
-        {
-          path: "/topLevel.txt",
-          content: Buffer.from("upload top level test object", "utf-8"),
-        },
-      ],
+      uploadForm,
     );
     assert.strictEqual(uploaded, true);
     await deleteObject(uploadDirectoryTestBucket, `create-directory-test`);
@@ -780,26 +783,6 @@ test("create pin", async () => {
   await createBucket(testBucketName);
   try {
     const createdPin = await filebaseClient.pinFile(testPinName, TEST_CID_1);
-    assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
-    await filebaseClient.deleteFile(createdPin.name);
-  } finally {
-    await deleteBucket(testBucketName);
-  }
-});
-
-test("create pins", async () => {
-  const testBucketName = `${TEST_PREFIX}-create-pin-test-pass`,
-    testPinName = `${TEST_PREFIX}-create-pin-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-      {
-        bucket: testBucketName,
-      },
-    );
-  await createBucket(testBucketName);
-  try {
-    const createdPin = await filebaseClient.pinFiles(testPinName, TEST_CID_1);
     assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
     await filebaseClient.deleteFile(createdPin.name);
   } finally {
