@@ -8,13 +8,27 @@ import FilebaseClient from "../src/index.js";
 
 // Application Constants
 const TEST_PREFIX = Date.now();
-const CLIENT_KEY = process.env.TEST_S3_KEY;
-const CLIENT_SECRET = process.env.TEST_S3_SECRET;
+const TEST_IPFS_GATEWAY =
+  process.env.TEST_IPFS_GATEWAY || "https://ipfs.filebase.io";
+const TEST_S3_ENDPOINT =
+  process.env.TEST_S3_ENDPOINT || "https://s3.filebase.com";
+const TEST_RPC_ENDPOINT =
+  process.env.TEST_RPC_ENDPOINT || "https://rpc.filebase.io";
+const TEST_PLATFORM_ENDPOINT =
+  process.env.TEST_PLATFORM_ENDPOINT || "https://api.filebase.io";
+const CLIENT_KEY = process.env.TEST_KEY;
+const CLIENT_SECRET = process.env.TEST_SECRET;
 
 //region Bucket Tests
 test("create bucket", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-create-bucket-test-pass`;
@@ -37,7 +51,13 @@ test("create bucket", async () => {
 
 test("get bucket cid", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToGet = `${TEST_PREFIX}-get-bucket-test-pass`;
@@ -63,7 +83,13 @@ test("get bucket cid", async () => {
 
 test("generate bucket cid", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToGenerate = `${TEST_PREFIX}-generate-bucket-test-pass`;
@@ -87,7 +113,13 @@ test("generate bucket cid", async () => {
 
 test("list buckets", async () => {
   const testBucketName = `${TEST_PREFIX}-list-bucket-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     initialBucketsList = await filebaseClient.listBuckets(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -105,7 +137,13 @@ test("list buckets", async () => {
 
 test("delete bucket", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Create bucket `delete-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-delete-bucket-test-pass`;
@@ -135,7 +173,13 @@ test("delete bucket", async () => {
 //region File Tests
 async function createBucket(name) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Create bucket with name
   const bucketNameToCreate = name;
@@ -154,6 +198,11 @@ async function uploadObject(bucket, key, body) {
   // Initialize FilebaseClient
   const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
     bucket,
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
   });
 
   // Upload Object
@@ -171,10 +220,15 @@ async function uploadObjects(bucket, key, body) {
   // Initialize FilebaseClient
   const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
     bucket,
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
   });
 
   // Upload Object
-  await filebaseClient.uploadFiles(key, body);
+  await filebaseClient.uploadDirectory(key, body);
 
   // Confirm Object Uploaded
   const uploadedObject = await filebaseClient.getFileMetadata(key);
@@ -186,6 +240,11 @@ async function deleteObject(bucket, key) {
   // Initialize FilebaseClient
   const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
     bucket,
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
   });
 
   // Delete Object
@@ -195,7 +254,13 @@ async function deleteObject(bucket, key) {
 
 async function deleteBucket(bucket) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
 
   // Delete Bucket
   await filebaseClient.deleteBucket(bucket);
@@ -222,6 +287,11 @@ test("delete object", async () => {
     // Initialize FilebaseClient
     const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
       bucket: deleteTestBucket,
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
     });
 
     // Delete object `delete-object-test`
@@ -246,10 +316,10 @@ test("upload object", async () => {
     const uploaded = await uploadObject(
       uploadTestBucket,
       `create-object-test`,
-      Buffer.from("upload object", "utf-8"),
+      new Blob(["upload object"]),
     );
 
-    assert.strictEqual(uploaded, true);
+    assert.notEqual(uploaded, false);
     await deleteObject(uploadTestBucket, `create-object-test`);
   } finally {
     await deleteBucket(uploadTestBucket);
@@ -266,25 +336,25 @@ test("upload directory", async () => {
     const uploadForm = new FormData();
     uploadForm.append(
       "file",
-      Buffer.from("upload test object", "utf-8"),
-      "/testObjects/1.txt",
+      new Blob(["upload test object"]),
+      "testObjects/1.txt",
     );
     uploadForm.append(
       "file",
-      Buffer.from("upload deep test object", "utf-8"),
-      "/testObjects/deep/1.txt",
+      new Blob(["upload deep test object"]),
+      "testObjects/deep/1.txt",
     );
     uploadForm.append(
       "file",
-      Buffer.from("upload top level test object", "utf-8"),
-      "/topLevel.txt",
+      new Blob(["upload top level test object"]),
+      "topLevel.txt",
     );
     const uploaded = await uploadObjects(
       uploadDirectoryTestBucket,
       `create-directory-test`,
       uploadForm,
     );
-    assert.strictEqual(uploaded, true);
+    assert.notEqual(uploaded, false);
     await deleteObject(uploadDirectoryTestBucket, `create-directory-test`);
   } finally {
     await deleteBucket(uploadDirectoryTestBucket);
@@ -302,7 +372,7 @@ test("generate presigned url for object", async () => {
     const uploaded = await uploadObject(
       downloadTestBucket,
       objectNameToCreate,
-      Buffer.from("download object", "utf-8"),
+      new Blob(["download object"]),
     );
     if (uploaded === false) {
       throw Error(`Failed to create object [${objectNameToCreate}]`);
@@ -312,6 +382,11 @@ test("generate presigned url for object", async () => {
       // Generate presigned URL for objects
       const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
         bucket: downloadTestBucket,
+        endpoints: {
+          s3: TEST_S3_ENDPOINT,
+          rpc: TEST_RPC_ENDPOINT,
+          platform: TEST_PLATFORM_ENDPOINT,
+        },
       });
       const presignedUrl =
         await filebaseClient.generatePresignedUrl(objectNameToCreate);
@@ -335,7 +410,7 @@ test("download object", async () => {
     const uploaded = await uploadObject(
       downloadTestBucket,
       objectNameToCreate,
-      Buffer.from("download object", "utf-8"),
+      new Blob(["download object"]),
     );
     if (uploaded === false) {
       throw Error(`Failed to create object [download-object-test]`);
@@ -345,6 +420,11 @@ test("download object", async () => {
       // Download object `download-object-test` and assert it completes
       const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
         bucket: downloadTestBucket,
+        endpoints: {
+          s3: TEST_S3_ENDPOINT,
+          rpc: TEST_RPC_ENDPOINT,
+          platform: TEST_PLATFORM_ENDPOINT,
+        },
       });
       const downloadStream =
           await filebaseClient.downloadFile(objectNameToCreate),
@@ -371,7 +451,7 @@ test("download object using gateway (ipfs)", async () => {
     const uploaded = await uploadObject(
       downloadTestBucket,
       objectNameToCreate,
-      Buffer.from("download object", "utf-8"),
+      new Blob(["download object"]),
     );
     if (uploaded === false) {
       throw Error(`Failed to create object [download-object-test]`);
@@ -381,10 +461,15 @@ test("download object using gateway (ipfs)", async () => {
       // Download object `download-object-test` and assert it completes
       const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
         bucket: downloadTestBucket,
-        gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
+        endpoints: {
+          s3: TEST_S3_ENDPOINT,
+          rpc: TEST_RPC_ENDPOINT,
+          platform: TEST_PLATFORM_ENDPOINT,
+          gateway: TEST_IPFS_GATEWAY,
+        },
       });
       const downloadStream = await filebaseClient.fetchContentByCid(
-          uploaded["cid"],
+          uploaded["Metadata"]["cid"],
         ),
         downloadFilename = uuidv4(),
         downloadPath = Path.resolve(os.tmpdir(), downloadFilename),
@@ -411,19 +496,24 @@ test("list objects", async () => {
       await uploadObject(
         listTestBucket,
         objectNameToCreate,
-        Buffer.from(`list objects ${createdObjectCount}`, "utf-8"),
+        new Blob([`list objects ${createdObjectCount}`]),
       );
       createdObjectCount++;
     }
 
     const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
       bucket: listTestBucket,
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
     });
 
     const objectList = await filebaseClient.listFiles(`list-object-test-`, {
       MaxKeys: 50,
     });
-    assert.equal(objectList.Contents.length, 26);
+    assert.equal(objectList.entries.length, 26);
 
     let deletedObjectCount = 0;
     while (deletedObjectCount < 26) {
@@ -448,10 +538,10 @@ test("copy object", async () => {
     const uploaded = await uploadObject(
       bucketSrc,
       objectNameToCreateSrc,
-      Buffer.from("copy object", "utf-8"),
+      new Blob(["copy object"]),
     );
     try {
-      assert.equal(uploaded, true);
+      assert.notEqual(uploaded, false);
 
       // Create bucket `copy-object-test-pass-dest`
       const bucketDest = `${TEST_PREFIX}-copy-object-test-pass-dest`;
@@ -461,16 +551,30 @@ test("copy object", async () => {
         // Initialize FilebaseClient
         const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
           bucket: bucketSrc,
+          endpoints: {
+            s3: TEST_S3_ENDPOINT,
+            rpc: TEST_RPC_ENDPOINT,
+            platform: TEST_PLATFORM_ENDPOINT,
+          },
         });
 
         // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
-        await filebaseClient.copyFile(objectNameToCreateSrc, bucketDest);
+        await filebaseClient.copyFile(
+          objectNameToCreateSrc,
+          objectNameToCreateSrc,
+          {
+            destinationBucket: bucketDest,
+          },
+        );
         try {
           // List bucket and assert new object exists
           const copiedObject = await filebaseClient.getFileMetadata(
             objectNameToCreateSrc,
+            {
+              bucket: bucketDest,
+            },
           );
-          assert.equal(copiedObject.ETag, '"8605273d870f50fde0d8fbcad4a8f702"');
+          assert.equal(copiedObject.ETag, '"1181cc81508b7da38b06cc32da7df1f0"');
         } finally {
           await deleteObject(bucketDest, objectNameToCreateSrc);
         }
@@ -489,7 +593,13 @@ test("copy object", async () => {
 //region Gateway Tests
 test("delete gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-delete-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    });
   await filebaseClient.createGateway(testGatewayName);
   await filebaseClient.deleteGateway(testGatewayName);
   const deletedName = await filebaseClient.getGateway(testGatewayName);
@@ -498,7 +608,13 @@ test("delete gateway", async () => {
 
 test("create gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-create-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createGateway(testGatewayName);
   await filebaseClient.deleteGateway(testGatewayName);
   assert.strictEqual(createdName.name, testGatewayName);
@@ -506,7 +622,13 @@ test("create gateway", async () => {
 
 test("update gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-update-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createGateway(testGatewayName);
   try {
     const updatedName = await filebaseClient.updateGateway(createdName.name, {
@@ -521,7 +643,13 @@ test("update gateway", async () => {
 
 test("get gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-get-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createGateway(testGatewayName, {});
   try {
     const testName = await filebaseClient.getGateway(createdName.name);
@@ -533,7 +661,13 @@ test("get gateway", async () => {
 
 test("list gateways", async () => {
   const testGatewayName = `${TEST_PREFIX}-list-names-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     initialGatewaysList = await filebaseClient.listGateways(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -556,7 +690,13 @@ const TEST_CID = process.env.TEST_NAME_CID,
 
 test("delete name", async () => {
   const testNameLabel = `${TEST_PREFIX}-delete-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    });
   await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   await filebaseClient.deleteIpnsName(testNameLabel);
   const deletedName = await filebaseClient.getIpnsName(testNameLabel);
@@ -565,7 +705,13 @@ test("delete name", async () => {
 
 test("create name", async () => {
   const testNameLabel = `${TEST_PREFIX}-create-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   await filebaseClient.deleteIpnsName(testNameLabel);
   assert.strictEqual(createdName.label, testNameLabel);
@@ -574,7 +720,13 @@ test("create name", async () => {
 
 test("import name", async () => {
   const testNameLabel = `${TEST_PREFIX}-import-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     importedName = await filebaseClient.importIpnsName(
       testNameLabel,
       TEST_CID,
@@ -587,7 +739,13 @@ test("import name", async () => {
 
 test("update name", async () => {
   const testNameLabel = `${TEST_PREFIX}-update-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const updatedName = await filebaseClient.updateIpnsName(
@@ -602,7 +760,13 @@ test("update name", async () => {
 
 test("get name", async () => {
   const testNameLabel = `${TEST_PREFIX}-get-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const testName = await filebaseClient.getIpnsName(createdName.label);
@@ -615,7 +779,13 @@ test("get name", async () => {
 
 test("resolve name", async () => {
   const testNameLabel = `${TEST_PREFIX}-resolve-name-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const testNameValue = await filebaseClient.resolveIpnsName(
@@ -629,7 +799,13 @@ test("resolve name", async () => {
 
 test("list names", async () => {
   const testNameLabel = `${TEST_PREFIX}-list-names-test-pass`,
-    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
+    }),
     initialNamesList = await filebaseClient.listIpnsNames(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -653,7 +829,7 @@ test("download object using gateway (ipns)", async () => {
     const uploaded = await uploadObject(
       downloadTestBucket,
       objectNameToCreate,
-      Buffer.from("download object", "utf-8"),
+      new Blob(["download object"]),
     );
     if (uploaded === false) {
       throw Error(`Failed to create object [download-object-test]`);
@@ -664,12 +840,17 @@ test("download object using gateway (ipns)", async () => {
       const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
         bucket: downloadTestBucket,
         gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
+        endpoints: {
+          s3: TEST_S3_ENDPOINT,
+          rpc: TEST_RPC_ENDPOINT,
+          platform: TEST_PLATFORM_ENDPOINT,
+        },
       });
 
       // Create IPNS Name
       const createdName = await filebaseClient.createIpnsName(
         `${objectNameToCreate}-ipns`,
-        uploaded.cid,
+        uploaded["Metadata"]["cid"],
       );
 
       const downloadStream = await filebaseClient.fetchContentByIpnsName(
@@ -696,6 +877,11 @@ test("create pin", async () => {
     testPinName = `${TEST_PREFIX}-create-pin-test-pass`,
     filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
       bucket: testBucketName,
+      endpoints: {
+        s3: TEST_S3_ENDPOINT,
+        rpc: TEST_RPC_ENDPOINT,
+        platform: TEST_PLATFORM_ENDPOINT,
+      },
     });
   await createBucket(testBucketName);
   try {

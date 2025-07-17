@@ -16,8 +16,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { unmarshalIPNSRecord } from "ipns";
 
 class FilebaseClient {
-  #DEFAULT_IPFS_TIMEOUT = 60000;
-  #DEFAULT_IPFS_ENDPOINT = "https://rpc.filebase.io";
+  #DEFAULT_RPC_TIMEOUT = 60000;
+  #DEFAULT_RPC_ENDPOINT = "https://rpc.filebase.io";
   #DEFAULT_S3_ENDPOINT = "https://s3.filebase.com";
   #DEFAULT_REGION = "us-east-1";
 
@@ -54,10 +54,7 @@ class FilebaseClient {
    */
   constructor(clientKey, clientSecret, options) {
     //region S3 Client
-    const clientEndpoint =
-      process.env.NODE_ENV === "test"
-        ? process.env.TEST_S3_ENDPOINT || this.#DEFAULT_S3_ENDPOINT
-        : this.#DEFAULT_S3_ENDPOINT;
+    const clientEndpoint = options?.endpoints?.s3 || this.#DEFAULT_S3_ENDPOINT;
     this.#s3_client = new S3Client({
       credentials: {
         accessKeyId: clientKey,
@@ -70,10 +67,7 @@ class FilebaseClient {
     //endregion
 
     //region IPFS Client
-    const ipfsEndpoint =
-      process.env.NODE_ENV === "test"
-        ? process.env.TEST_IPFS_ENDPOINT || this.#DEFAULT_IPFS_ENDPOINT
-        : this.#DEFAULT_IPFS_ENDPOINT;
+    const ipfsEndpoint = options?.endpoints?.rpc || this.#DEFAULT_RPC_ENDPOINT;
     this.#ipfs_credentials = `${clientKey}:${clientSecret}`;
     let ipfsCredentials = this.#ipfs_credentials;
     if (options?.bucket) {
@@ -82,7 +76,7 @@ class FilebaseClient {
     }
     this.#ipfs_client = axios.create({
       baseURL: ipfsEndpoint,
-      timeout: options?.timeout || this.#DEFAULT_IPFS_TIMEOUT,
+      timeout: options?.timeout || this.#DEFAULT_RPC_TIMEOUT,
       headers: {
         common: {
           Authorization: `Bearer ${Buffer.from(ipfsCredentials).toString("base64")}`,
@@ -94,11 +88,7 @@ class FilebaseClient {
 
     //region Gateways Client
     const gatewayClientEndpoint =
-      process.env.NODE_ENV === "test"
-        ? process.env.TEST_GW_ENDPOINT ||
-          options?.gateway?.endpoint ||
-          this.#DEFAULT_ENDPOINT
-        : options?.gateway?.endpoint || this.#DEFAULT_ENDPOINT;
+      options?.endpoints?.platform || this.#DEFAULT_ENDPOINT;
     this.#gateways_client = axios.create({
       baseURL: `${gatewayClientEndpoint}/v1/gateways`,
       timeout: options?.timeout || this.#GATEWAY_DEFAULT_TIMEOUT,
@@ -112,9 +102,7 @@ class FilebaseClient {
 
     //region Names Client
     const namesClientEndpoint =
-      process.env.NODE_ENV === "test"
-        ? process.env.TEST_NAME_ENDPOINT || this.#DEFAULT_ENDPOINT
-        : this.#DEFAULT_ENDPOINT;
+      options?.endpoints?.platform || this.#DEFAULT_ENDPOINT;
     this.#names_client = axios.create({
       baseURL: `${namesClientEndpoint}/v1/names`,
       timeout: this.#DEFAULT_TIMEOUT,
@@ -128,7 +116,7 @@ class FilebaseClient {
 
     //region IPFS Gateway Client
     this.#default_gateway =
-      options?.gateway.endpoint || this.#PUBLIC_IPFS_GATEWAY;
+      options?.endpoints.gateway || this.#PUBLIC_IPFS_GATEWAY;
     //endregion
   }
 
@@ -275,14 +263,14 @@ class FilebaseClient {
     };
     options.headers["Authorization"] =
       `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
-    options.searchParams = options.searchParams || {};
-    options.searchParams["preserve-filenames"] = "true";
+    options.params = options.params || {};
+    options.params["preserve-filenames"] = "true";
 
     const downloadResponse = await this.#ipfs_client.request({
       method: "POST",
       url: "api/v0/add",
       headers: options.headers,
-      params: options.searchParams,
+      params: options.params,
       data: formData,
       validateStatus: function (status) {
         return status === 200;
@@ -895,8 +883,7 @@ class FilebaseClient {
 
     const downloadResponse = await axios.request({
       method: "GET",
-      baseURL: selectedEndpoint,
-      url: `/${resolver}/${cid}`,
+      url: `${selectedEndpoint}/${resolver}/${cid}`,
       headers: downloadHeaders,
       responseType: "arraybuffer",
       timeout: options?.timeout || this.#GATEWAY_DEFAULT_TIMEOUT,
