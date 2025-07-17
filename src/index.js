@@ -29,7 +29,7 @@ class FilebaseClient {
   #VALID_FORMATS = ["ipns-record", "raw", "car"];
 
   #default_bucket;
-  #default_gateway = this.#PUBLIC_IPFS_GATEWAY;
+  #default_gateway;
 
   #ipfs_credentials;
   #ipfs_client;
@@ -88,11 +88,7 @@ class FilebaseClient {
           Authorization: `Bearer ${Buffer.from(ipfsCredentials).toString("base64")}`,
         },
       },
-      method: "POST",
       responseType: "text",
-      validateStatus: function (status) {
-        return status === 200;
-      },
     });
     //endregion
 
@@ -128,6 +124,11 @@ class FilebaseClient {
         },
       },
     });
+    //endregion
+
+    //region IPFS Gateway Client
+    this.#default_gateway =
+      options?.gateway.endpoint || this.#PUBLIC_IPFS_GATEWAY;
     //endregion
   }
 
@@ -269,19 +270,30 @@ class FilebaseClient {
   //region File Methods
   async #uploadFiles(formData, options) {
     options.headers = options.headers || {};
+    options.headers = {
+      ...options.headers,
+    };
     options.headers["Authorization"] =
       `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
     options.searchParams = options.searchParams || {};
     options.searchParams["preserve-filenames"] = "true";
 
-    const downloadResponse = await axios.request({
+    const downloadResponse = await this.#ipfs_client.request({
+      method: "POST",
       url: "api/v0/add",
       headers: options.headers,
       params: options.searchParams,
+      data: formData,
+      validateStatus: function (status) {
+        return status === 200;
+      },
     });
 
     const pins = [];
     for (const entry of downloadResponse.data.split("\n")) {
+      if (entry === "") {
+        continue;
+      }
       const parsedEntry = JSON.parse(entry);
       pins.push({
         name: parsedEntry["Name"],
@@ -455,7 +467,8 @@ class FilebaseClient {
   }
 
   async pinFile(path, cid, options) {
-    await axios.request({
+    await this.#ipfs_client.request({
+      method: "POST",
       url: "api/v0/pin/add",
       headers: {
         Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
@@ -463,6 +476,9 @@ class FilebaseClient {
       params: {
         name: path,
         arg: cid,
+      },
+      validateStatus: function (status) {
+        return status === 200;
       },
     });
     return true;
@@ -490,16 +506,7 @@ class FilebaseClient {
   }
 
   async uploadFiles(formData, options) {
-    let encodedCredentials = this.#getIpfsCredentials(options?.bucket);
-    const uploadOptions = {
-      headers: {
-        Authorization: `Bearer ${encodedCredentials}`,
-      },
-      params: {
-        "preserve-filenames": "true",
-      },
-    };
-
+    const uploadOptions = {};
     return await this.#uploadFiles(formData, uploadOptions);
   }
   //endregion

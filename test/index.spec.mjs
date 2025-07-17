@@ -8,14 +8,13 @@ import FilebaseClient from "../src/index.js";
 
 // Application Constants
 const TEST_PREFIX = Date.now();
+const CLIENT_KEY = process.env.TEST_S3_KEY;
+const CLIENT_SECRET = process.env.TEST_S3_SECRET;
 
 //region Bucket Tests
 test("create bucket", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-create-bucket-test-pass`;
@@ -38,10 +37,7 @@ test("create bucket", async () => {
 
 test("get bucket cid", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToGet = `${TEST_PREFIX}-get-bucket-test-pass`;
@@ -67,10 +63,7 @@ test("get bucket cid", async () => {
 
 test("generate bucket cid", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Create bucket `create-bucket-test-pass`
   const bucketNameToGenerate = `${TEST_PREFIX}-generate-bucket-test-pass`;
@@ -94,10 +87,7 @@ test("generate bucket cid", async () => {
 
 test("list buckets", async () => {
   const testBucketName = `${TEST_PREFIX}-list-bucket-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_S3_KEY || process.env.TEST_KEY,
-      process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     initialBucketsList = await filebaseClient.listBuckets(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -115,10 +105,7 @@ test("list buckets", async () => {
 
 test("delete bucket", async () => {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Create bucket `delete-bucket-test-pass`
   const bucketNameToCreate = `${TEST_PREFIX}-delete-bucket-test-pass`;
@@ -148,10 +135,7 @@ test("delete bucket", async () => {
 //region File Tests
 async function createBucket(name) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Create bucket with name
   const bucketNameToCreate = name;
@@ -168,11 +152,9 @@ async function createBucket(name) {
 
 async function uploadObject(bucket, key, body) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    { bucket },
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    bucket,
+  });
 
   // Upload Object
   await filebaseClient.uploadFile(key, body);
@@ -187,11 +169,9 @@ async function uploadObject(bucket, key, body) {
 
 async function uploadObjects(bucket, key, body) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    { bucket },
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    bucket,
+  });
 
   // Upload Object
   await filebaseClient.uploadFiles(key, body);
@@ -204,11 +184,9 @@ async function uploadObjects(bucket, key, body) {
 
 async function deleteObject(bucket, key) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-    { bucket },
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    bucket,
+  });
 
   // Delete Object
   await filebaseClient.deleteFile(key);
@@ -217,13 +195,10 @@ async function deleteObject(bucket, key) {
 
 async function deleteBucket(bucket) {
   // Initialize FilebaseClient
-  const filebaseClient = new FilebaseClient(
-    process.env.TEST_S3_KEY || process.env.TEST_KEY,
-    process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-  );
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
 
   // Delete Bucket
-  await filebaseClient.deleteFile(bucket);
+  await filebaseClient.deleteBucket(bucket);
   return true;
 }
 
@@ -238,18 +213,16 @@ test("delete object", async () => {
     const uploaded = await uploadObject(
       deleteTestBucket,
       objectNameToCreate,
-      Buffer.from("delete object", "utf-8"),
+      new Blob(["delete object"]),
     );
     if (uploaded === false) {
       throw Error(`Failed to create object [delete-object-test]`);
     }
 
     // Initialize FilebaseClient
-    const filebaseClient = new FilebaseClient(
-      process.env.TEST_S3_KEY || process.env.TEST_KEY,
-      process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-      { bucket: deleteTestBucket },
-    );
+    const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      bucket: deleteTestBucket,
+    });
 
     // Delete object `delete-object-test`
     await filebaseClient.deleteFile(objectNameToCreate);
@@ -337,11 +310,9 @@ test("generate presigned url for object", async () => {
 
     try {
       // Generate presigned URL for objects
-      const filebaseClient = new FilebaseClient(
-        process.env.TEST_S3_KEY || process.env.TEST_KEY,
-        process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-        { bucket: downloadTestBucket },
-      );
+      const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+        bucket: downloadTestBucket,
+      });
       const presignedUrl =
         await filebaseClient.generatePresignedUrl(objectNameToCreate);
       assert.strictEqual(typeof presignedUrl, "string");
@@ -372,11 +343,9 @@ test("download object", async () => {
 
     try {
       // Download object `download-object-test` and assert it completes
-      const filebaseClient = new FilebaseClient(
-        process.env.TEST_S3_KEY || process.env.TEST_KEY,
-        process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-        { bucket: downloadTestBucket },
-      );
+      const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+        bucket: downloadTestBucket,
+      });
       const downloadStream =
           await filebaseClient.downloadFile(objectNameToCreate),
         downloadFilename = uuidv4(),
@@ -410,14 +379,10 @@ test("download object using gateway (ipfs)", async () => {
 
     try {
       // Download object `download-object-test` and assert it completes
-      const filebaseClient = new FilebaseClient(
-        process.env.TEST_S3_KEY || process.env.TEST_KEY,
-        process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-        {
-          bucket: downloadTestBucket,
-          gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
-        },
-      );
+      const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+        bucket: downloadTestBucket,
+        gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
+      });
       const downloadStream = await filebaseClient.fetchContentByCid(
           uploaded["cid"],
         ),
@@ -451,11 +416,9 @@ test("list objects", async () => {
       createdObjectCount++;
     }
 
-    const filebaseClient = new FilebaseClient(
-      process.env.TEST_S3_KEY || process.env.TEST_KEY,
-      process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-      { bucket: listTestBucket },
-    );
+    const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      bucket: listTestBucket,
+    });
 
     const objectList = await filebaseClient.listFiles(`list-object-test-`, {
       MaxKeys: 50,
@@ -496,11 +459,9 @@ test("copy object", async () => {
 
       try {
         // Initialize FilebaseClient
-        const filebaseClient = new FilebaseClient(
-          process.env.TEST_S3_KEY || process.env.TEST_KEY,
-          process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-          { bucket: bucketSrc },
-        );
+        const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+          bucket: bucketSrc,
+        });
 
         // Copy object `copy-object-test` from `copy-object-test-pass-src` to `copy-object-test-pass-dest`
         await filebaseClient.copyFile(objectNameToCreateSrc, bucketDest);
@@ -528,10 +489,7 @@ test("copy object", async () => {
 //region Gateway Tests
 test("delete gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-delete-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_GW_KEY || process.env.TEST_KEY,
-      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
-    );
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
   await filebaseClient.createGateway(testGatewayName);
   await filebaseClient.deleteGateway(testGatewayName);
   const deletedName = await filebaseClient.getGateway(testGatewayName);
@@ -540,10 +498,7 @@ test("delete gateway", async () => {
 
 test("create gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-create-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_GW_KEY || process.env.TEST_KEY,
-      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createGateway(testGatewayName);
   await filebaseClient.deleteGateway(testGatewayName);
   assert.strictEqual(createdName.name, testGatewayName);
@@ -551,10 +506,7 @@ test("create gateway", async () => {
 
 test("update gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-update-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_GW_KEY || process.env.TEST_KEY,
-      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createGateway(testGatewayName);
   try {
     const updatedName = await filebaseClient.updateGateway(createdName.name, {
@@ -569,10 +521,7 @@ test("update gateway", async () => {
 
 test("get gateway", async () => {
   const testGatewayName = `${TEST_PREFIX}-get-gateway-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_GW_KEY || process.env.TEST_KEY,
-      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createGateway(testGatewayName, {});
   try {
     const testName = await filebaseClient.getGateway(createdName.name);
@@ -584,10 +533,7 @@ test("get gateway", async () => {
 
 test("list gateways", async () => {
   const testGatewayName = `${TEST_PREFIX}-list-names-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_GW_KEY || process.env.TEST_KEY,
-      process.env.TEST_GW_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     initialGatewaysList = await filebaseClient.listGateways(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -610,10 +556,7 @@ const TEST_CID = process.env.TEST_NAME_CID,
 
 test("delete name", async () => {
   const testNameLabel = `${TEST_PREFIX}-delete-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    );
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET);
   await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   await filebaseClient.deleteIpnsName(testNameLabel);
   const deletedName = await filebaseClient.getIpnsName(testNameLabel);
@@ -622,10 +565,7 @@ test("delete name", async () => {
 
 test("create name", async () => {
   const testNameLabel = `${TEST_PREFIX}-create-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   await filebaseClient.deleteIpnsName(testNameLabel);
   assert.strictEqual(createdName.label, testNameLabel);
@@ -634,10 +574,7 @@ test("create name", async () => {
 
 test("import name", async () => {
   const testNameLabel = `${TEST_PREFIX}-import-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     importedName = await filebaseClient.importIpnsName(
       testNameLabel,
       TEST_CID,
@@ -650,10 +587,7 @@ test("import name", async () => {
 
 test("update name", async () => {
   const testNameLabel = `${TEST_PREFIX}-update-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const updatedName = await filebaseClient.updateIpnsName(
@@ -668,10 +602,7 @@ test("update name", async () => {
 
 test("get name", async () => {
   const testNameLabel = `${TEST_PREFIX}-get-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const testName = await filebaseClient.getIpnsName(createdName.label);
@@ -684,10 +615,7 @@ test("get name", async () => {
 
 test("resolve name", async () => {
   const testNameLabel = `${TEST_PREFIX}-resolve-name-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     createdName = await filebaseClient.createIpnsName(testNameLabel, TEST_CID);
   try {
     const testNameValue = await filebaseClient.resolveIpnsName(
@@ -701,10 +629,7 @@ test("resolve name", async () => {
 
 test("list names", async () => {
   const testNameLabel = `${TEST_PREFIX}-list-names-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-    ),
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET),
     initialNamesList = await filebaseClient.listIpnsNames(),
     countToCreate = 3;
   for (let i = 0; i < countToCreate; i++) {
@@ -736,14 +661,10 @@ test("download object using gateway (ipns)", async () => {
 
     try {
       // Download object `download-object-test` and assert it completes
-      const filebaseClient = new FilebaseClient(
-        process.env.TEST_S3_KEY || process.env.TEST_KEY,
-        process.env.TEST_S3_SECRET || process.env.TEST_SECRET,
-        {
-          bucket: downloadTestBucket,
-          gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
-        },
-      );
+      const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+        bucket: downloadTestBucket,
+        gateway: { endpoint: process.env.TEST_IPFS_GATEWAY },
+      });
 
       // Create IPNS Name
       const createdName = await filebaseClient.createIpnsName(
@@ -773,18 +694,14 @@ const TEST_CID_1 = "QmSEu6zGwKgkQA3ZKaDnvkrwre1kkQa7eRFCbQi7waNwTT";
 test("create pin", async () => {
   const testBucketName = `${TEST_PREFIX}-create-pin-test-pass`,
     testPinName = `${TEST_PREFIX}-create-pin-test-pass`,
-    filebaseClient = new FilebaseClient(
-      process.env.TEST_NAME_KEY || process.env.TEST_KEY,
-      process.env.TEST_NAME_SECRET || process.env.TEST_SECRET,
-      {
-        bucket: testBucketName,
-      },
-    );
+    filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+      bucket: testBucketName,
+    });
   await createBucket(testBucketName);
   try {
     const createdPin = await filebaseClient.pinFile(testPinName, TEST_CID_1);
-    assert.strictEqual(createdPin.pin.cid, TEST_CID_1);
-    await filebaseClient.deleteFile(createdPin.name);
+    assert.strictEqual(createdPin, true);
+    await filebaseClient.deleteFile(testPinName);
   } finally {
     await deleteBucket(testBucketName);
   }
