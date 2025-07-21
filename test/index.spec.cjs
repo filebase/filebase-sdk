@@ -1,10 +1,10 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import * as Path from "node:path";
-import { writeFile } from "node:fs/promises";
-import { v4 as uuidv4 } from "uuid";
-import os from "node:os";
-import { FilebaseClient } from "../dist/node/index.mjs";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const Path = require("node:path");
+const { writeFile } = require("node:fs/promises");
+const { v4: uuidv4 } = require("uuid");
+const os = require("node:os");
+const { FilebaseClient } = require("../dist/node/index.js");
 
 // Application Constants
 const TEST_PREFIX = Date.now();
