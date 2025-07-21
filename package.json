@@ -11,11 +11,12 @@
   "module": "./src/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./src/index.js"
-    }
+    "node": {
+      "types": "./dist/node/index.d.ts",
+      "require": "./dist/node/index.js",
+      "import": "./dist/node/index.mjs"
+    },
+    "default": "./dist/browser/index.js"
   },
   "files": [
     "dist",
@@ -39,6 +40,8 @@
   ],
   "devDependencies": {
     "clean-jsdoc-theme": "4.3.0",
+    "esbuild": "^0.25.8",
+    "esbuild-plugins-node-modules-polyfill": "1.7.1",
     "jsdoc": "4.0.4",
     "prettier": "3.6.2",
     "tsup": "8.5.0",

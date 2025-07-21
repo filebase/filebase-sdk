@@ -907,4 +907,4 @@ class FilebaseClient {
   //endregion
 }
 
-export default FilebaseClient;
+export { FilebaseClient };
