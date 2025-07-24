@@ -791,7 +791,7 @@ test("resolve name", async () => {
     const testNameValue = await filebaseClient.resolveIpnsName(
       createdName.network_key,
     );
-    assert.strictEqual(testNameValue, `/ipfs/${TEST_CID}`);
+    assert.strictEqual(testNameValue, TEST_CID);
   } finally {
     await filebaseClient.deleteIpnsName(testNameLabel);
   }
