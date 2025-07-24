@@ -511,7 +511,7 @@ test("list objects", async () => {
     });
 
     const objectList = await filebaseClient.listFiles(`list-object-test-`, {
-      MaxKeys: 50,
+      limit: 50,
     });
     assert.equal(objectList.entries.length, 26);
 

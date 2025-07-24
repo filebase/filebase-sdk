@@ -447,43 +447,39 @@ class FilebaseClient {
    *
    * @param {string} prefix - The prefix to filter the files list with.
    * @param {Object} [options] - The options for listing files.
-   * @property {string} options.Bucket The name of the bucket. If not provided, the default bucket will be used.
-   * @property {string} options.ContinuationToken=null Continues listing from this objects name.
-   * @property {string} options.Delimiter=null Character used to group keys
+   * @property {string} options.bucket The name of the bucket. If not provided, the default bucket will be used.
+   * @property {string} options.nextToken Continues listing from this objects name.
+   * @property {number} options.limit=1000 Continues listing from this objects name.
    * @returns {Promise<listFilesResult>} - A promise that resolves to an array of files.
    * @example
    * // List files in bucket with a limit of 1000
-   * await filebaseClient.listFiles('my-favorites-folder', {
-   *   MaxKeys: 1000
+   * await client.listFiles('my-favorites-folder', {
+   *   limit: 1000
    * });
    */
   async listFiles(
     prefix = undefined,
     options = {
-      Bucket: this.#default_bucket,
-      ContinuationToken: null,
-      Delimiter: null,
-      MaxKeys: 1000,
+      bucket: this.#default_bucket,
+      nextToken: null,
+      limit: 1000,
     },
   ) {
     const listOptions = {
-      ...options,
-      Prefix: prefix,
+      Bucket: options?.bucket || this.#default_bucket,
+      Prefix: prefix || "",
+      Delimiter: "/",
+      MaxKeys: listOptions?.limit || 1000,
     };
-    if (listOptions?.MaxKeys && listOptions.MaxKeys > 100000) {
-      throw new Error(`MaxKeys Maximum value is 100000`);
+    if (listOptions?.limit && listOptions.limit > 100000) {
+      throw new Error(`Maximum limit is 100000`);
     }
-    const bucket = listOptions?.Bucket || this.#default_bucket,
-      limit = listOptions?.MaxKeys || 1000,
-      commandOptions = {
-        Bucket: bucket,
-        MaxKeys: limit,
-      },
-      command = new ListObjectsV2Command({
-        ...listOptions,
-        ...commandOptions,
-      });
-
+    if (options?.nextToken) {
+      listOptions.ContinuationToken = options?.nextToken;
+    }
+    const command = new ListObjectsV2Command({
+      ...listOptions,
+    });
     const { Contents, IsTruncated, NextContinuationToken } =
       await this.#s3_client.send(command);
     const listResponse = {
@@ -498,40 +494,11 @@ class FilebaseClient {
     };
     if (IsTruncated) {
       listResponse["nextPage"] = this.listFiles(prefix, {
-        ...options,
-        ContinuationToken: NextContinuationToken,
+        ...listOptions,
+        continuationToken: NextContinuationToken,
       });
     }
     return listResponse;
-  }
-
-  /**
-   * @summary Pins a file by name and CID.
-   * @param {string} name - The name of the file to pin.
-   * @param {string} cid - The CID of the file to pin.
-   * @param {Object} [options] Options for pinning file
-   * @property {string} options.bucket The bucket to pin the file to.
-   * @returns {Promise<boolean>} - A promise that resolves when the file has been queued for pinning.
-   * @example
-   * // Pin file with name of `pin-file-example`
-   * const pinnedFile = await client.pinFile(`pin-file-example`, 'QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR');
-   */
-  async pinFile(name, cid, options) {
-    await this.#ipfs_client.request({
-      method: "POST",
-      url: "api/v0/pin/add",
-      headers: {
-        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
-      },
-      params: {
-        name: name,
-        arg: cid,
-      },
-      validateStatus: function (status) {
-        return status === 200;
-      },
-    });
-    return true;
   }
 
   /**
@@ -976,6 +943,37 @@ class FilebaseClient {
     } catch (err) {
       this.#apiErrorHandler(err);
     }
+  }
+  //endregion
+
+  //region Pinning Methods
+  /**
+   * @summary Pins a file by name and CID.
+   * @param {string} name - The name of the file to pin.
+   * @param {string} cid - The CID of the file to pin.
+   * @param {Object} [options] Options for pinning file
+   * @property {string} options.bucket The bucket to pin the file to.
+   * @returns {Promise<boolean>} - A promise that resolves when the file has been queued for pinning.
+   * @example
+   * // Pin file with name of `pin-file-example`
+   * const pinnedFile = await client.pinFile(`pin-file-example`, 'QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR');
+   */
+  async pinFile(name, cid, options) {
+    await this.#ipfs_client.request({
+      method: "POST",
+      url: "api/v0/pin/add",
+      headers: {
+        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
+      },
+      params: {
+        name: name,
+        arg: cid,
+      },
+      validateStatus: function (status) {
+        return status === 200;
+      },
+    });
+    return true;
   }
   //endregion
 
