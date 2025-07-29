@@ -1,21 +1,17 @@
 **node.js**
 ````js
-// Import Classes
-import {BucketManager} from '@filebase/sdk';
+// Import Client
+import { FilebaseClient } from '@filebase/sdk';
 
-// Initialize BucketManager
-const bucketManager = new BucketManager(S3_KEY, S3_SECRET);
+// Initialize FilebaseClient
+const client = new FilebaseClient(S3_KEY, S3_SECRET);
 
 // Create bucket
 const bucketName = `create-bucket-[random string]`;
-await bucketManager.create(bucketName);
+await client.createBucket(bucketName);
 
 // List buckets
-const bucketsList = await bucketManager.list();
-
-// Toggle bucket privacy off
-await bucketManager.setPrivacy(bucketName, false);
-console.dir(bucketsList);
+const bucketsList = await client.listBuckets();
 
 // Delete Bucket
-await bucketManager.delete(bucketName);
+await client.deleteBucket(bucketName);

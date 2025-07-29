@@ -511,7 +511,7 @@ test("list objects", async () => {
     });
 
     const objectList = await filebaseClient.listFiles(`list-object-test-`, {
-      MaxKeys: 50,
+      limit: 50,
     });
     assert.equal(objectList.entries.length, 26);
 
@@ -791,7 +791,7 @@ test("resolve name", async () => {
     const testNameValue = await filebaseClient.resolveIpnsName(
       createdName.network_key,
     );
-    assert.strictEqual(testNameValue, `/ipfs/${TEST_CID}`);
+    assert.strictEqual(testNameValue, TEST_CID);
   } finally {
     await filebaseClient.deleteIpnsName(testNameLabel);
   }

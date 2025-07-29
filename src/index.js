@@ -10,10 +10,14 @@ import {
   ListBucketsCommand,
   ListObjectsV2Command,
   PutBucketTaggingCommand,
+  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { unmarshalIPNSRecord } from "ipns";
+
+/**
+ */
 
 class FilebaseClient {
   #DEFAULT_RPC_TIMEOUT = 60000;
@@ -26,7 +30,7 @@ class FilebaseClient {
 
   #GATEWAY_DEFAULT_TIMEOUT = 60000;
   #PUBLIC_IPFS_GATEWAY = "https://ipfs.filebase.io";
-  #VALID_FORMATS = ["ipns-record", "raw", "car"];
+  #VALID_FORMATS = ["ipns-record", "raw", "car", "tar"];
 
   #default_bucket;
   #default_gateway;
@@ -38,19 +42,17 @@ class FilebaseClient {
   #s3_client;
 
   /**
-   * @typedef {Object} clientOptions
-   * @property {string} [bucket] The bucket to use for file operations (optional)
-   */
-
-  /**
    * @summary Creates a new instance of the constructor.
    * @param {string} clientKey - The access key ID for authentication.
    * @param {string} clientSecret - The secret access key for authentication.
-   * @param {clientOptions} [options] - Options for the client (optional)
+   * @param {Object} [options] - Options for the client (optional)
+   * @property {string} options.bucket The bucket to use for file operations (optional)
    * @tutorial quickstart-bucket
    * @example
    * import FilebaseClient from "@filebase/sdk";
-   * const client = new FilebaseClient("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD");
+   * const client = new FilebaseClient("KEY_FROM_DASHBOARD", "SECRET_FROM_DASHBOARD", {
+   *   bucket: "my-main-bucket"
+   * });
    */
   constructor(clientKey, clientSecret, options) {
     //region S3 Client
@@ -163,7 +165,7 @@ class FilebaseClient {
    * @returns {Promise<bucket>} - A promise that resolves when the bucket is created.
    * @example
    * // Create bucket with name of `create-bucket-example`
-   * await client.createBucket(`create-bucket-example`);
+   * const createdBucket = await client.createBucket(`create-bucket-example`);
    */
   async createBucket(name) {
     const command = new CreateBucketCommand({
@@ -193,7 +195,10 @@ class FilebaseClient {
   /**
    * @summary Generates the IPFS Directory/Folder CID for a given bucket
    * @param {string} name - The name of the bucket to use.
-   * @returns {Promise<boolean>} A promise that resolves with the CID of the new directory/folder
+   * @returns {Promise<string>} A promise that resolves with the CID of the new directory/folder
+   * @example
+   * // Generate CID for bucket with name of `bucket-name-to-mfs`
+   * const generatedCid = await client.generateBucketCid(`bucket-name-to-mfs`);
    */
   async generateBucketCid(name) {
     const command = new PutBucketTaggingCommand({
@@ -221,6 +226,14 @@ class FilebaseClient {
     return cid;
   }
 
+  /**
+   * @summary Gets the IPFS Directory/Folder CID for a given bucket
+   * @param {string} name - The name of the bucket to use.
+   * @returns {Promise<string>} A promise that resolves with the CID of the directory
+   * @example
+   * // Get CID for bucket with name of `bucket-name-with-mfs`
+   * const bucketCid = await client.generateBucketCid(`bucket-name-with-mfs`);
+   */
   async getBucketCid(name) {
     const getCidCommand = new GetBucketTaggingCommand({
       Bucket: name,
@@ -245,7 +258,7 @@ class FilebaseClient {
    * @returns {Promise<Array<bucket>>} - A promise that resolves with an array of objects representing the buckets in the client.
    * @example
    * // List all buckets
-   * await client.listBuckets();
+   * const bucketList = await client.listBuckets();
    */
   async listBuckets() {
     const command = new ListBucketsCommand({}),
@@ -292,6 +305,18 @@ class FilebaseClient {
     return pins;
   }
 
+  /**
+   * @summary Copies a file by name.  Can also copy files to another bucket.
+   * @param {string} from - The name of the file to use as the source.
+   * @param {string} to - The name to use for the destination file
+   * @param {Object} [options] Options for copying file
+   * @property {string} options.sourceBucket The bucket to copy the file from.
+   * @property {string} entries.destinationBucket The bucket to copy the file into.
+   * @returns {Promise<boolean>} - A promise that resolves when the file has been copied.
+   * @example
+   * // Copy file with name of `copy-file-example`
+   * const copiedFile = await client.copyFile(`copy-file-example`, `copy-file-example-copy1`);
+   */
   async copyFile(from, to, options) {
     const copySource = `${
         options?.sourceBucket || this.#default_bucket
@@ -306,68 +331,99 @@ class FilebaseClient {
     return true;
   }
 
-  async deleteFile(path, options) {
+  /**
+   * @summary Deletes a file by name.
+   * @param {string} name - The name of the file to delete.
+   * @param {Object} [options] Options for deleting file
+   * @property {string} options.bucket The bucket to delete the file from.
+   * @returns {Promise<boolean>} - A promise that resolves when the file has been deleted.
+   * @example
+   * // Delete file with name of `delete-file-example`
+   * const deletedFile = await client.deleteFile(`delete-file-example`);
+   */
+  async deleteFile(name, options) {
     const command = new DeleteObjectCommand({
       Bucket: options?.bucket || this.#default_bucket,
-      Key: path,
+      Key: name,
     });
 
     await this.#s3_client.send(command);
     return true;
   }
 
-  async downloadFile(path, options) {
+  /**
+   * @summary Downloads a file by name.
+   * @param {string} name - The name of the file to download.
+   * @param {Object} [options] Options for downloading file
+   * @property {string} options.bucket The bucket to download the file from.
+   * @returns {Promise<stream>} - A promise that resolves with the contents of the file.
+   * @example
+   * // Download file with name of `download-file-example`
+   * const downloadedFile = await client.downloadFile(`download-file-example`);
+   */
+  async downloadFile(name, options) {
     const command = new GetObjectCommand({
         Bucket: options?.bucket || this.#default_bucket,
-        Key: path,
+        Key: name,
       }),
       response = await this.#s3_client.send(command);
 
     return response.Body;
   }
 
-  async generatePresignedUrl(objectKey, expiresInSeconds = 3600, options) {
-    const command = new GetObjectCommand({
+  /**
+   * @summary Generate presigned URL for uploading a file.
+   * @param {string} name - The name of the file to upload.
+   * @param {Object} [options] Options for downloading file
+   * @property {string} options.bucket The bucket to upload the file into.
+   * @property {string} options.expectedContentType The content type that the uploaded file should be.
+   * @property {integer} options.expectedFileSize The number of bytes the file should be on upload.
+   * @property {integer} options.expirationInSeconds The number of seconds for the URL to be valid.
+   * @returns {Promise<string>} - A promise that resolves with the presigned URL to use for the upload.
+   * @example
+   * // Generate a presigned URL to upload a file with name of `presigned-upload-file-example`
+   * const presignedUrl = await client.generatePresignedUrl(`presigned-upload-file-example`, {
+   *   expirationInSeconds: 600,
+   * });
+   */
+  async generatePresignedUrl(name, options) {
+    const putObjectOptions = {
       Bucket: options?.bucket || this.#default_bucket,
-      Key: objectKey,
-    });
+      Key: name,
+    };
+    if (options?.expectedContentType) {
+      putObjectOptions["ContentType"] = options?.expectedContentType;
+    }
+    if (options?.expectedFileSize) {
+      putObjectOptions["ContentLength"] = options?.expectedFileSize;
+    }
 
     try {
+      const command = new PutObjectCommand(putObjectOptions);
       return await getSignedUrl(this.#s3_client, command, {
-        expiresIn: expiresInSeconds, // URL valid for 1 hour by default
+        expiresIn: options?.expirationInSeconds || 3600, // URL valid for 1 hour by default
       });
     } catch (error) {
-      console.error("Error generating presigned download URL:", error);
+      console.error(`Error generating presigned upload URL:`, error);
       throw error;
     }
   }
 
   /**
-   * @typedef {Object} objectOptions
-   * @property {string} [bucket] - The bucket to pin the IPFS CID into.
-   */
-
-  /**
-   * @typedef {Object} objectHeadResult
-   * @property {string} cid The CID of the uploaded object
-   * @property {array<Object>} [entries] If a directory then returns an array of the containing objects
-   * @property {string} entries.cid The CID of the uploaded object
-   * @property {string} entries.path The path of the object
-   */
-
-  /**
    * @summary Gets an objects info and metadata using the S3 API.
-   * @param {string} path - The key of the object to be inspected.
-   * @param {objectOptions} [options] - The options for inspecting the object.
-   * @returns {Promise<objectHeadResult|false>}
+   * @param {string} name - The key of the object to be inspected.
+   * @param {Object} [options] - The options for inspecting the object.
+   * @property {string} options.bucket - The bucket to pin the IPFS CID into.
+   * @returns {Promise<Object|false>}
    */
-  async getFileMetadata(path, options) {
+  async getFileMetadata(name, options) {
     try {
       const command = new HeadObjectCommand({
         Bucket: options?.bucket || this.#default_bucket,
-        Key: path,
+        Key: name,
       });
-      return await this.#s3_client.send(command);
+      const headOutput = await this.#s3_client.send(command);
+      return headOutput["Metadata"];
     } catch (err) {
       if (err.name === "NotFound") {
         return false;
@@ -387,52 +443,43 @@ class FilebaseClient {
    */
 
   /**
-   * @typedef {Object} listObjectOptions
-   * @property {string} [Bucket] The name of the bucket. If not provided, the default bucket will be used.
-   * @property {string|null} [ContinuationToken=null] Continues listing from this objects name.
-   * @property {string|null} [Delimiter=null] Character used to group keys
-   * @property {number} [MaxKeys=1000] The maximum number of objects to retrieve. Defaults to 1000.
-   */
-
-  /**
    * Retrieves a list of files from a specified bucket.
    *
    * @param {string} prefix - The prefix to filter the files list with.
-   * @param {listObjectOptions} [options] - The options for listing files.
+   * @param {Object} [options] - The options for listing files.
+   * @property {string} options.bucket The name of the bucket. If not provided, the default bucket will be used.
+   * @property {string} options.nextToken Continues listing from this objects name.
+   * @property {number} options.limit=1000 Continues listing from this objects name.
    * @returns {Promise<listFilesResult>} - A promise that resolves to an array of files.
    * @example
    * // List files in bucket with a limit of 1000
-   * await filebaseClient.listFiles('my-favorites-folder', {
-   *   MaxKeys: 1000
+   * await client.listFiles('my-favorites-folder', {
+   *   limit: 1000
    * });
    */
   async listFiles(
     prefix = undefined,
     options = {
-      Bucket: this.#default_bucket,
-      ContinuationToken: null,
-      Delimiter: null,
-      MaxKeys: 1000,
+      bucket: this.#default_bucket,
+      nextToken: null,
+      limit: 1000,
     },
   ) {
     const listOptions = {
-      ...options,
-      Prefix: prefix,
+      Bucket: options?.bucket || this.#default_bucket,
+      Prefix: prefix || "",
+      Delimiter: "/",
+      MaxKeys: listOptions?.limit || 1000,
     };
-    if (listOptions?.MaxKeys && listOptions.MaxKeys > 100000) {
-      throw new Error(`MaxKeys Maximum value is 100000`);
+    if (listOptions?.limit && listOptions.limit > 100000) {
+      throw new Error(`Maximum limit is 100000`);
     }
-    const bucket = listOptions?.Bucket || this.#default_bucket,
-      limit = listOptions?.MaxKeys || 1000,
-      commandOptions = {
-        Bucket: bucket,
-        MaxKeys: limit,
-      },
-      command = new ListObjectsV2Command({
-        ...listOptions,
-        ...commandOptions,
-      });
-
+    if (options?.nextToken) {
+      listOptions.ContinuationToken = options?.nextToken;
+    }
+    const command = new ListObjectsV2Command({
+      ...listOptions,
+    });
     const { Contents, IsTruncated, NextContinuationToken } =
       await this.#s3_client.send(command);
     const listResponse = {
@@ -447,55 +494,82 @@ class FilebaseClient {
     };
     if (IsTruncated) {
       listResponse["nextPage"] = this.listFiles(prefix, {
-        ...options,
-        ContinuationToken: NextContinuationToken,
+        ...listOptions,
+        continuationToken: NextContinuationToken,
       });
     }
     return listResponse;
   }
 
-  async pinFile(path, cid, options) {
-    await this.#ipfs_client.request({
-      method: "POST",
-      url: "api/v0/pin/add",
-      headers: {
-        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
-      },
-      params: {
-        name: path,
-        arg: cid,
-      },
-      validateStatus: function (status) {
-        return status === 200;
-      },
-    });
-    return true;
-  }
+  /**
+   * @typedef {Object} pinnedFile
+   * @property {string} name Name of the pinned file
+   * @property {string} cid CID of the pinned file
+   * @property {number} size Size in Bytes of the pinned file
+   */
 
-  async uploadDirectory(path, formData, options = {}) {
-    const uploadedFiles = await this.#uploadFiles(formData, {
+  /**
+   * @summary Uploads an array of Files as a directory
+   * @param {string} name - The name of the directory once pinned.
+   * @param {File[]} input - The array of files to include in the directory.
+   * @param {Object} [options] Options for uploading directory
+   * @property {string} options.bucket The bucket to upload the pinned directory into.
+   * @returns {Promise<pinnedFile>} - A promise that resolves when the directory has finished uploading.
+   * @example
+   * // Pin file with name of `pin-file-example`
+   * const pinnedFile = await client.pinFile(`pin-file-example`, 'QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR');
+   */
+  async uploadDirectory(name, input, options = {}) {
+    const uploadedFiles = await this.#uploadFiles(input, {
       headers: {
         Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
       },
       params: {
-        "directory-name": path,
+        "directory-name": name,
         "wrap-with-directory": "true",
       },
     });
     return uploadedFiles[0];
   }
 
-  async uploadFile(path, content, options = {}) {
+  /**
+   * @summary Uploads a single file
+   * @param {string} name - The name of the file once pinned.
+   * @param {File} content - The file to upload.
+   * @param {Object} [options] Options for uploading file
+   * @property {string} options.bucket The bucket to upload the pinned directory into.
+   * @property {Object} options.headers The headers to pass to the RPC API.
+   * @property {Object} options.params The params to pass to the RPC API.
+   * @returns {Promise<pinnedFile>} - A promise that resolves when the file has finished uploading.
+   * @example
+   * // Upload file with name of `upload-file-example`
+   * const uploadedFile = await client.uploadFile(`upload-file-example`, new Blob(["Hello Filebase!"]));
+   */
+  async uploadFile(name, content, options = {}) {
     const uploadFormData = new FormData();
-    uploadFormData.append("file", content, path);
+    uploadFormData.append("file", content, name);
 
     const uploadedFiles = await this.uploadFiles(uploadFormData, options);
     return uploadedFiles[0];
   }
 
-  async uploadFiles(formData, options) {
-    const uploadOptions = {};
-    return await this.#uploadFiles(formData, uploadOptions);
+  /**
+   * @summary Uploads multiple files at once.
+   * @param {FormData} content - The form to upload.
+   * @param {Object} [options] Options for uploading file
+   * @property {string} options.bucket The bucket to upload the pinned directory into.
+   * @property {Object} options.headers The headers to pass to the RPC API.
+   * @property {Object} options.params The params to pass to the RPC API.
+   * @returns {Promise<pinnedFile[]>} - A promise that resolves when the file has finished uploading.
+   * @example
+   * // Upload files with a form
+   * const uploadForm = new FormData();
+   * uploadForm.append('File', new Blob(['Hello Jack!']), 'jacks/file.txt');
+   * uploadForm.append('File', new Blob(['Hello Jill!']), 'jills/file.txt');
+   * const uploadedFiles = await client.uploadFiles(uploadForm);
+   */
+  uploadFiles(content, options = {}) {
+    return this.#uploadFiles(content, options);
   }
   //endregion
 
@@ -513,19 +587,15 @@ class FilebaseClient {
    */
 
   /**
-   * @typedef {Object} nameOptions
-   * @property {boolean} [enabled] Whether the name is enabled or not.
-   */
-
-  /**
    * @summary Creates a new IPNS name with the given name as the label and CID.
    * @param {string} label - The label of the new IPNS name.
    * @param {string} cid - The CID of the IPNS name.
-   * @param {nameOptions} [options] - Additional options for the IPNS name.
+   * @param {Object} [options] - Additional options for the IPNS name.
+   * @param {boolean} options.enabled - Whether the name is enabled or not.
    * @returns {Promise<name>} - A Promise that resolves with the response JSON.
    * @example
    * // Create IPNS name with label of `create-name-example` and CID of `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
-   * await client.createIpnsName(`create-name-example`, `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`);
+   * const createdName = await client.createIpnsName(`create-name-example`, `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`);
    */
   async createIpnsName(
     label,
@@ -578,7 +648,7 @@ class FilebaseClient {
    * @returns {Promise<name>} - A promise that resolves to the value of a name.
    * @example
    * // Get IPNS name with label of `list-name-example`
-   * await nameManager.get(`list-name-example`);
+   * const ipnsName = await nameManager.get(`list-name-example`);
    */
   async getIpnsName(label) {
     try {
@@ -600,12 +670,13 @@ class FilebaseClient {
    * @param {string} label - The label for the IPNS name.
    * @param {string} cid - The CID (Content Identifier) of the data.
    * @param {string} privateKey - The existing private key encoded in Base64.
-   * @param {nameOptions} [options] - Additional options for the IPNS name.
+   * @param {Object} [options] - Additional options for the IPNS name.
+   * @param {boolean} options.enabled - Whether the name is enabled or not.
    * @returns {Promise<name>} - A Promise that resolves to the server response.
    * @example
    * // Import IPNS private key with label of `create-name-example`, CID of `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
    * // and a private key encoded with base64
-   * await client.importIpnsName(
+   * const createdName = await client.importIpnsName(
    *  `create-name-example`,
    *  `QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm`
    *  `BASE64_ENCODED_PRIVATEKEY`
@@ -640,7 +711,7 @@ class FilebaseClient {
    * @returns {Promise<Array.<name>>} - A promise that resolves to an array of names.
    * @example
    * // List all IPNS names
-   * await client.listIpnsNames();
+   * const namesList = await client.listIpnsNames();
    */
   async listIpnsNames() {
     try {
@@ -653,13 +724,30 @@ class FilebaseClient {
     }
   }
 
-  async resolveIpnsName(value) {
+  /**
+   * @summary Resolves an IPNS CID using your selected gateway
+   * @param {string} value - The IPNS CID to resolve.
+   * @param {Object} [options] - Optional options for fetching content.
+   * @param {string} options.endpoint - Gateway to use for downloading data.
+   * @param {string} options.format - Format for returned data. ["car", "tar", "raw", "ipns-record"]
+   * @param {number} options.timeout - Timeout for request in milliseconds.
+   * @param {string} options.token - Token for accessing gateway.
+   * @returns {Promise<string>} - A promise that resolves to the IPFS CID.
+   */
+  async resolveIpnsName(value, options = {}) {
     try {
-      const resolvedIpnsName = await this.#fetchIpnsRecord(value);
-      const buf = Buffer.from(resolvedIpnsName);
-      const body = new Uint8Array(buf, 0, buf.byteLength);
-      const ipnsRecord = unmarshalIPNSRecord(body);
-      return ipnsRecord.value;
+      const resolvedIpnsName = await this.#fetchContentFromGateway(
+        value,
+        "ipns",
+        {
+          ...options,
+          format: "ipns-record",
+        },
+      );
+      return unmarshalIPNSRecord(Buffer.from(resolvedIpnsName)).value.replace(
+        "/ipfs/",
+        "",
+      );
     } catch (err) {
       this.#apiErrorHandler(err);
     }
@@ -669,8 +757,8 @@ class FilebaseClient {
    * @summary Updates the specified name with the given CID.
    * @param {string} label - The label of the name to update.
    * @param {string} cid - The cid to associate with the name.
-   * @param {nameOptions} options - The options for the set operation.
-   *
+   * @param {Object} options - The options for the set operation.
+   * @param {boolean} options.enabled - Whether the name is enabled or not.   *
    * @returns {Promise<boolean>} - A Promise that resolves to true if the IPNS name was updated.
    * @example
    * // Update name with label of `update-name-example` and set the value of the IPNS name.
@@ -725,7 +813,7 @@ class FilebaseClient {
    * @example
    * // Create gateway with name of `create-gateway-example` and a custom domain of `cname.mycustomdomain.com`.
    * // The custom domain must already exist and have a CNAME record pointed at `create-gateway-example.myfilebase.com`.
-   * await client.createGateway(`create-gateway-example`, {
+   * const createdGateway = await client.createGateway(`create-gateway-example`, {
    *   domain: `cname.mycustomdomain.com`
    * });
    */
@@ -782,7 +870,7 @@ class FilebaseClient {
    * @returns {Promise<gateway|false>} - A promise that resolves to the value of a gateway.
    * @example
    * // Get gateway with name of `gateway-get-example`
-   * await client.getGateway(`gateway-get-example`);
+   * const existingGateway = await client.getGateway(`gateway-get-example`);
    */
   async getGateway(name) {
     try {
@@ -804,7 +892,7 @@ class FilebaseClient {
    * @returns {Promise<Array.<gateway>>} - A promise that resolves to an array of gateways.
    * @example
    * // List all gateways
-   * await client.listGateways();
+   * const gatewaysList = await client.listGateways();
    */
   async listGateways() {
     try {
@@ -858,6 +946,37 @@ class FilebaseClient {
   }
   //endregion
 
+  //region Pinning Methods
+  /**
+   * @summary Pins a file by name and CID.
+   * @param {string} name - The name of the file to pin.
+   * @param {string} cid - The CID of the file to pin.
+   * @param {Object} [options] Options for pinning file
+   * @property {string} options.bucket The bucket to pin the file to.
+   * @returns {Promise<boolean>} - A promise that resolves when the file has been queued for pinning.
+   * @example
+   * // Pin file with name of `pin-file-example`
+   * const pinnedFile = await client.pinFile(`pin-file-example`, 'QmbQDovX7wRe9ek7u6QXe9zgCXkTzoUSsTFJEkrYV1HrVR');
+   */
+  async pinFile(name, cid, options) {
+    await this.#ipfs_client.request({
+      method: "POST",
+      url: "api/v0/pin/add",
+      headers: {
+        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
+      },
+      params: {
+        name: name,
+        arg: cid,
+      },
+      validateStatus: function (status) {
+        return status === 200;
+      },
+    });
+    return true;
+  }
+  //endregion
+
   //region Content Fetch Methods
   async #fetchContentFromGateway(cid, resolver, options) {
     const selectedEndpoint = options?.endpoint || this.#default_gateway;
@@ -891,16 +1010,30 @@ class FilebaseClient {
     return downloadResponse.data;
   }
 
-  async #fetchIpnsRecord(cid) {
-    return this.#fetchContentFromGateway(cid, "ipns", {
-      format: "ipns-record",
-    });
-  }
-
+  /**
+   * @summary Fetches content by the IPFS CID from your selected gateway.
+   * @param {string} cid - The CID for the IPFS content to fetch data from.
+   * @param {Object} [options] - Optional options for fetching content.
+   * @param {string} options.endpoint - Gateway to use for downloading data.
+   * @param {string} options.format - Format for returned data. ["car", "tar", "raw", "ipns-record"]
+   * @param {number} options.timeout - Timeout for request in milliseconds.
+   * @param {string} options.token - Token for accessing gateway.
+   * @returns {Promise<stream>}
+   */
   async fetchContentByCid(cid, options = {}) {
     return this.#fetchContentFromGateway(cid, "ipfs", options);
   }
 
+  /**
+   * @summary Fetches content by the IPNS CID from your selected gateway.
+   * @param {string} cid - The CID for the IPNS name to fetch data from.
+   * @param {Object} [options] - Optional options for fetching content.
+   * @param {string} options.endpoint - Gateway to use for downloading data.
+   * @param {string} options.format - Format for returned data. ["car", "tar", "raw", "ipns-record"]
+   * @param {number} options.timeout - Timeout for request in milliseconds.
+   * @param {string} options.token - Token for accessing gateway.
+   * @returns {Promise<stream>}
+   */
   async fetchContentByIpnsName(cid, options = {}) {
     return this.#fetchContentFromGateway(cid, "ipns", options);
   }
