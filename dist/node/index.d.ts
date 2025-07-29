@@ -34,6 +34,8 @@ class FilebaseClient {
    * @param {string} clientSecret - The secret access key for authentication.
    * @param {Object} [options] - Options for the client (optional)
    * @property {string} options.bucket The bucket to use for file operations (optional)
+   * @property {string} options.gateway The gateway to use for file retrievals (optional)
+   * @property {string} options.timeout The amount of time to wait for responses (optional)
    * @tutorial quickstart-bucket
    * @example
    * import FilebaseClient from "@filebase/sdk";
@@ -104,8 +106,7 @@ class FilebaseClient {
     //endregion
 
     //region IPFS Gateway Client
-    this.#default_gateway =
-      options?.endpoints.gateway || this.#PUBLIC_IPFS_GATEWAY;
+    this.#default_gateway = options?.gateway || this.#PUBLIC_IPFS_GATEWAY;
     //endregion
   }
 
