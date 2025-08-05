@@ -279,6 +279,9 @@ class FilebaseClient {
       `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
     options.params = options.params || {};
     options.params["preserve-filenames"] = "true";
+    options.params["cid-version"] = options.params.cidVersion
+      ? Number(options.params.cidVersion)
+      : 0;
 
     const downloadResponse = await this.#ipfs_client.request({
       method: "POST",
@@ -514,6 +517,7 @@ class FilebaseClient {
    * @param {string} name - The name of the directory once pinned.
    * @param {File[]} input - The array of files to include in the directory.
    * @param {Object} [options] Options for uploading directory
+   * @property {number} options.cidVersion The version of CID to use for the files hash.
    * @property {string} options.bucket The bucket to upload the pinned directory into.
    * @returns {Promise<pinnedFile>} - A promise that resolves when the directory has finished uploading.
    * @example
@@ -526,6 +530,7 @@ class FilebaseClient {
         Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
       },
       params: {
+        "cid-version": options?.cidVersion || 0,
         "directory-name": name,
         "wrap-with-directory": "true",
       },
@@ -538,6 +543,7 @@ class FilebaseClient {
    * @param {string} name - The name of the file once pinned.
    * @param {File} content - The file to upload.
    * @param {Object} [options] Options for uploading file
+   * @property {number} options.cidVersion The version of CID to use for the files hash.
    * @property {string} options.bucket The bucket to upload the pinned directory into.
    * @property {Object} options.headers The headers to pass to the RPC API.
    * @property {Object} options.params The params to pass to the RPC API.
@@ -558,6 +564,7 @@ class FilebaseClient {
    * @summary Uploads multiple files at once.
    * @param {FormData} content - The form to upload.
    * @param {Object} [options] Options for uploading file
+   * @property {number} options.cidVersion The version of CID to use for the files hash.
    * @property {string} options.bucket The bucket to upload the pinned directory into.
    * @property {Object} options.headers The headers to pass to the RPC API.
    * @property {Object} options.params The params to pass to the RPC API.
