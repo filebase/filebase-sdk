@@ -278,7 +278,7 @@ class FilebaseClient {
     options.headers["Authorization"] =
       `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
     options.params = options.params || {};
-    options.params["preserve-filenames"] = "true";
+    options.params["to-files"] = options.params.toFiles || "";
     options.params["cid-version"] = options.params.cidVersion
       ? Number(options.params.cidVersion)
       : 0;
@@ -531,7 +531,7 @@ class FilebaseClient {
       },
       params: {
         "cid-version": options?.cidVersion || 0,
-        "directory-name": name,
+        "to-files": name,
         "wrap-with-directory": "true",
       },
     });
@@ -554,7 +554,8 @@ class FilebaseClient {
    */
   async uploadFile(name, content, options = {}) {
     const uploadFormData = new FormData();
-    uploadFormData.append("file", content, name);
+    uploadFormData.append("file", content);
+    options["to-files"] = name;
 
     const uploadedFiles = await this.uploadFiles(uploadFormData, options);
     return uploadedFiles[0];
@@ -577,7 +578,10 @@ class FilebaseClient {
    * const uploadedFiles = await client.uploadFiles(uploadForm);
    */
   uploadFiles(content, options = {}) {
-    return this.#uploadFiles(content, options);
+    return this.#uploadFiles(content, {
+      ...options,
+      "to-files": options?.prefix || "",
+    });
   }
   //endregion
 
