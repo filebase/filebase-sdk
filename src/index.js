@@ -271,23 +271,20 @@ class FilebaseClient {
 
   //region File Methods
   async #uploadFiles(formData, options) {
-    options.headers = options.headers || {};
-    options.headers = {
-      ...options.headers,
-    };
-    options.headers["Authorization"] =
+    const uploadHeaders = options.headers || {};
+    uploadHeaders["Authorization"] =
       `Bearer ${this.#getIpfsCredentials(options?.bucket)}`;
-    options.params = options.params || {};
-    options.params["to-files"] = options.params.toFiles || "";
-    options.params["cid-version"] = options.params.cidVersion
-      ? Number(options.params.cidVersion)
+    const uploadParams = options.params || {};
+    uploadParams["preserve-filenames"] = "true";
+    uploadParams["cid-version"] = uploadParams.cidVersion
+      ? Number(uploadParams.cidVersion)
       : 0;
 
     const downloadResponse = await this.#ipfs_client.request({
       method: "POST",
       url: "api/v0/add",
-      headers: options.headers,
-      params: options.params,
+      headers: uploadHeaders,
+      params: uploadParams,
       data: formData,
       validateStatus: function (status) {
         return status === 200;
@@ -531,7 +528,7 @@ class FilebaseClient {
       },
       params: {
         "cid-version": options?.cidVersion || 0,
-        "to-files": name,
+        "directory-name": name,
         "wrap-with-directory": "true",
       },
     });
@@ -554,8 +551,7 @@ class FilebaseClient {
    */
   async uploadFile(name, content, options = {}) {
     const uploadFormData = new FormData();
-    uploadFormData.append("file", content);
-    options["to-files"] = name;
+    uploadFormData.append("file", content, name);
 
     const uploadedFiles = await this.uploadFiles(uploadFormData, options);
     return uploadedFiles[0];
@@ -578,10 +574,7 @@ class FilebaseClient {
    * const uploadedFiles = await client.uploadFiles(uploadForm);
    */
   uploadFiles(content, options = {}) {
-    return this.#uploadFiles(content, {
-      ...options,
-      "to-files": options?.prefix || "",
-    });
+    return this.#uploadFiles(content, options);
   }
   //endregion
 

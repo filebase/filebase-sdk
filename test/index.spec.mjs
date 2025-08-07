@@ -236,6 +236,23 @@ async function uploadObjects(bucket, key, body) {
   return typeof uploadedObject !== "undefined" && uploadedObject !== false;
 }
 
+async function uploadFiles(bucket, body) {
+  // Initialize FilebaseClient
+  const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
+    bucket,
+    endpoints: {
+      s3: TEST_S3_ENDPOINT,
+      rpc: TEST_RPC_ENDPOINT,
+      platform: TEST_PLATFORM_ENDPOINT,
+    },
+  });
+
+  // Upload Object
+  await filebaseClient.uploadFiles(body);
+
+  return true;
+}
+
 async function deleteObject(bucket, key) {
   // Initialize FilebaseClient
   const filebaseClient = new FilebaseClient(CLIENT_KEY, CLIENT_SECRET, {
@@ -321,6 +338,41 @@ test("upload object", async () => {
 
     assert.notEqual(uploaded, false);
     await deleteObject(uploadTestBucket, `create-object-test`);
+  } finally {
+    await deleteBucket(uploadTestBucket);
+  }
+});
+
+test("upload objects", async () => {
+  // Create Bucket `create-objects-test-pass
+  const uploadTestBucket = `${TEST_PREFIX}-create-objects-test-pass`;
+  await createBucket(uploadTestBucket);
+
+  try {
+    // Upload object `create-object-test`
+    const objectPrefix = `create-objects-test/`;
+    const objectsForm = new FormData();
+    objectsForm.append(
+      "file",
+      new Blob(["upload object 1"]),
+      `${objectPrefix}testObjects/1.txt`,
+    );
+    objectsForm.append(
+      "file",
+      new Blob(["upload object 2"]),
+      `${objectPrefix}testObjects/2.txt`,
+    );
+    objectsForm.append(
+      "file",
+      new Blob(["upload object 3"]),
+      `${objectPrefix}testObjects/3.txt`,
+    );
+    const uploaded = await uploadFiles(uploadTestBucket, objectsForm);
+
+    assert.notEqual(uploaded, false);
+    await deleteObject(uploadTestBucket, `${objectPrefix}testObjects/1.txt`);
+    await deleteObject(uploadTestBucket, `${objectPrefix}testObjects/2.txt`);
+    await deleteObject(uploadTestBucket, `${objectPrefix}testObjects/3.txt`);
   } finally {
     await deleteBucket(uploadTestBucket);
   }
