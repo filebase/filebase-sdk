@@ -1,6 +1,6 @@
 {
   "name": "@filebase/sdk",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "SDK for Interacting with Filebase Services [S3(Buckets, Objects), IPFS(Gateways, Pins) IPNS(Names)]",
   "repository": {
     "type": "git",
@@ -11,22 +11,19 @@
   "module": "./src/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "import": "./src/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    "node": {
+      "types": "./dist/node/index.d.ts",
+      "require": "./dist/node/index.js",
+      "import": "./dist/node/index.mjs"
+    },
+    "default": "./dist/browser/index.js"
   },
   "files": [
     "dist",
     "src"
   ],
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  },
   "scripts": {
-    "build": "tsup src/index.js --format cjs --dts --clean",
+    "build": "tsup src/index.js",
     "test": "node --test",
     "doc": "jsdoc -c jsdoc.json"
   },
@@ -38,28 +35,24 @@
     "ipns",
     "sdk",
     "web3",
-    "distributed"
+    "distributed",
+    "decentralized"
   ],
   "devDependencies": {
-    "clean-jsdoc-theme": "4.2.17",
-    "jsdoc": "4.0.2",
-    "prettier": "3.1.0",
-    "tsup": "8.0.1",
-    "typescript": "5.3.3"
+    "clean-jsdoc-theme": "4.3.0",
+    "esbuild": "0.25.8",
+    "esbuild-plugins-node-modules-polyfill": "1.7.1",
+    "jsdoc": "4.0.4",
+    "prettier": "3.6.2",
+    "tsup": "8.5.0",
+    "typescript": "5.8.3",
+    "uuid": "11.1.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.478.0",
-    "@aws-sdk/lib-storage": "3.478.0",
-    "@helia/car": "1.0.4",
-    "@helia/mfs": "3.0.1",
-    "@helia/unixfs": "1.4.3",
-    "@ipld/car": "5.2.4",
-    "axios": "1.6.2",
-    "blockstore-fs": "1.1.10",
-    "blockstore-core": "4.4.1",
-    "datastore-core": "9.2.9",
-    "p-queue": "8.0.1",
-    "uuid": "9.0.1",
-    "winston": "3.12.0"
+    "@aws-sdk/client-s3": "3.842.0",
+    "@aws-sdk/s3-request-presigner": "3.844.0",
+    "@helia/verified-fetch": "7.1.0",
+    "axios": "1.10.0",
+    "ipns": "10.1.2"
   }
 }
