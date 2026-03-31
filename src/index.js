@@ -13,6 +13,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { createVerifiedFetch } from "@helia/verified-fetch";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { unmarshalIPNSRecord } from "ipns";
 
@@ -21,6 +22,8 @@ import { unmarshalIPNSRecord } from "ipns";
 
 class FilebaseClient {
   #DEFAULT_RPC_TIMEOUT = 60000;
+  #DEFAULT_ROUTER_ENDPOINT = "https://routingv1.filebase.io";
+  #DEFAULT_TRUSTLESS_ENDPOINT = "https://trustless.filebase.io";
   #DEFAULT_RPC_ENDPOINT = "https://rpc.filebase.io";
   #DEFAULT_S3_ENDPOINT = "https://s3.filebase.com";
   #DEFAULT_REGION = "us-east-1";
@@ -38,6 +41,7 @@ class FilebaseClient {
   #ipfs_credentials;
   #ipfs_client;
   #gateways_client;
+  #trustless_client;
   #names_client;
   #s3_client;
 
@@ -121,6 +125,12 @@ class FilebaseClient {
     //region IPFS Gateway Client
     this.#default_gateway = options?.gateway || this.#PUBLIC_IPFS_GATEWAY;
     //endregion
+
+    //region Trustless Gateway Client
+    this.#trustless_client = createVerifiedFetch({
+      gateways: [this.#DEFAULT_TRUSTLESS_ENDPOINT],
+      routers: [this.#DEFAULT_ROUTER_ENDPOINT],
+    });
   }
 
   //region Utility Methods
@@ -166,7 +176,7 @@ class FilebaseClient {
    * @returns {Promise<bucket>} - A promise that resolves when the bucket is created.
    * @example
    * // Create bucket with name of `create-bucket-example`
-   * const createdBucket = await client.createBucket(`create-bucket-example`);
+   * await client.createBucket(`create-bucket-example`);
    */
   async createBucket(name) {
     const command = new CreateBucketCommand({
@@ -357,19 +367,59 @@ class FilebaseClient {
    * @param {string} name - The name of the file to download.
    * @param {Object} [options] Options for downloading file
    * @property {string} options.bucket The bucket to download the file from.
+   * @property {number} options.offset The offset to start reading the file from.
+   * @property {number} options.count The number of bytes to read from the file.
+   * @property {boolean} options.verify If true, the file will be verified using the IPFS API.
    * @returns {Promise<stream>} - A promise that resolves with the contents of the file.
    * @example
    * // Download file with name of `download-file-example`
    * const downloadedFile = await client.downloadFile(`download-file-example`);
    */
   async downloadFile(name, options) {
-    const command = new GetObjectCommand({
-        Bucket: options?.bucket || this.#default_bucket,
-        Key: name,
-      }),
-      response = await this.#s3_client.send(command);
+    if (options?.verify === true) {
+      const fileMetadata = await this.getFileMetadata(name, options);
+      if (fileMetadata === false) {
+        throw new Error(`File Not Found`);
+      }
 
-    return response.Body;
+      const verifiedResp = await this.#trustless_client(
+        `ipfs://${fileMetadata.cid}`,
+      );
+
+      if (verifiedResp?.status !== 200) {
+        throw new Error(
+          `Failed to Verify File: ${verifiedResp.status} - ${verifiedResp.statusText}`,
+        );
+      }
+
+      return verifiedResp.body;
+    }
+
+    let downloadParams = {
+      arg: name,
+    };
+
+    if (options?.offset) {
+      downloadParams["offset"] = Number(options.offset);
+    }
+
+    if (options?.count) {
+      downloadParams["count"] = Number(options.count);
+    }
+
+    const downloadResp = await this.#ipfs_client.request({
+      method: "POST",
+      url: "api/v0/files/read",
+      headers: {
+        Authorization: `Bearer ${this.#getIpfsCredentials(options?.bucket)}`,
+      },
+      params: downloadParams,
+      validateStatus: function (status) {
+        return status === 200;
+      },
+    });
+
+    return downloadResp.data;
   }
 
   /**
